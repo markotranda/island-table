@@ -1,0 +1,6 @@
+{
+  "name": "island-table", "version": "1.0.0", "private": true, "type": "module",
+  "description": "A private, self-hosted 3-6 player island trading game",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": { "start": "node server.mjs", "dev": "node --watch server.mjs", "test": "node --test test/*.test.mjs" }
+}
