@@ -36,13 +36,7 @@ The live connection uses HTTP server-sent events (SSE), not WebSockets. Disable 
 
 Every push to `main` runs the tests and, if they pass, publishes `ghcr.io/markotranda/island-table` (amd64 and arm64) with the tags `latest`, `1.0.<build number>`, and `sha-<commit>`. See `.github/workflows/publish.yml`.
 
-The package is private, so log the server in once with a GitHub personal access token (classic) that has only the `read:packages` scope:
-
-```sh
-docker login ghcr.io -u markotranda
-```
-
-Copy `compose.yaml` (and optionally `.env.example` as `.env`) into a folder on the server, then start it:
+The image is public, so no registry login is needed. Copy `compose.yaml` (and optionally `.env.example` as `.env`) into a folder on the server, then start it:
 
 ```sh
 docker compose pull && docker compose up -d
