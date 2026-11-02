@@ -48,6 +48,8 @@ export async function launch(){
       },
       async type(selector,text){await page.waitFor(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return false;e.focus();e.select?.();return true;})()`);await cmd('Input.insertText',{text});},
       select:(selector,value)=>page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));return e.value;})()`),
+      // PNG of the current viewport, for debugging failures and design reviews.
+      async screenshot(){return Buffer.from((await cmd('Page.captureScreenshot',{format:'png'})).data,'base64');},
       close:()=>send('Target.disposeBrowserContext',{browserContextId}),
     };
     return page;

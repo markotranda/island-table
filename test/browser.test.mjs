@@ -201,7 +201,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('traded with')`);
     await openPanel(B,'trade','trade');await fill(B,'trade',{'want-ore':1});await submit(B,'trade');await toastIncludes(B,'gifts are not allowed');
 
-    await openPanel(A,'bank','bank');const ratio=Number((await A.text('#bank select[name="give"] option[value="wood"]')).match(/\d+/)[0]);
+    await openPanel(A,'bank','bank');const ratio=Number((await A.text('#bank [data-ratio="wood"] .ratio')).match(/\d+/)[0]);
     await fill(A,'bank',{give:'wood',want:'ore'});await submit(A,'bank');
     await A.waitFor(`document.querySelectorAll('.resource-card b')[4].textContent==='3'`,{message:'Bank trade did not complete'});
     assert.deepEqual(await hand(A),{wood:4-ratio,brick:1,wool:1,wheat:2,ore:3});
@@ -232,7 +232,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await A.click('[data-hex]');await A.waitFor(`!document.querySelector('[data-hex]')`);
     if(await A.has('[data-victim]'))await A.click('[data-victim]');
     await A.waitFor(`document.querySelector('[data-command="roll"]')`,{message:'Knight did not return to the roll'});
-    assert.match(await A.eval(`document.querySelectorAll('.sidebar .player')[${a}].textContent`),/⚑ 1/);
+    assert.equal(await A.eval(`document.querySelectorAll('.sidebar .player')[${a}].querySelector('.stat[title$="knights played"]').textContent`),'1');
     for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
@@ -247,7 +247,7 @@ test('browser: Largest Army wins on your own turn, reveals hidden points, and th
     assert.equal(await scoreOf(A,a),8);assert.equal(await scoreOf(other,a),4,'opponents see only public points');
     await clickCard(A,'Knight');
     for(const page of pages)await page.waitFor(`document.querySelector('.winner')`,{message:'Winner was not shown on every screen'});
-    assert.match(await other.text('.winner'),new RegExp(`Seat ${a}!`));
+    assert.match(await other.text('.winner'),new RegExp(`Seat ${a} wins!`));
     assert.equal(await scoreOf(other,a),10,'hidden points are revealed at the end');
     assert.ok(!await pages[1].has('[data-command="rematch"]'),'only the host can start a rematch');
     await pages[0].click('[data-command="rematch"]');
@@ -261,7 +261,7 @@ test('browser: five players use paired turns and neutral fixed settlements',{ski
   const server=await startServer(),browser=await launch();let pages=[];
   try{
     pages=await seatTable(browser,server,5,'fixed');
-    assert.equal(await pages[0].eval(`document.querySelectorAll('.building[fill="#727c6a"]').length`),2,'the unused colour leaves two neutral settlements');
+    assert.equal(await pages[0].eval(`document.querySelectorAll('.building[data-owner="-1"]').length`),2,'the unused colour leaves two neutral settlements');
     const p1=await waitActive(pages);assert.match(await phaseLabel(p1),/PAIRED PLAYER 1/);
     await p1.click('[data-command="roll"]');await resolveRoll(pages,p1);
     assert.ok(await p1.has('[data-mode="trade"]'),'Player 1 may trade with players');

@@ -2,3 +2,137 @@
 :root{scrollbar-color:#b8c2b2 #f5f2e9}button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid #bd995b;outline-offset:3px}
 @media(min-width:851px){.game-layout{height:calc(100dvh - 76px);min-height:570px}.board-column{min-height:0}.board-heading,.hand{flex-shrink:0}.board-wrap{min-height:300px}.board{min-height:300px;max-height:none;position:absolute;inset:0}.control-sidebar,.sidebar{overflow-y:auto}}
 @media(max-width:620px){.brand>.eyebrow{display:none}.brand{font-size:18px;gap:6px}.brand-mark{font-size:24px}.topbar{gap:8px;padding:0 12px}.topbar .right{gap:5px}.topbar .right button{font-size:10px;padding:7px 8px;white-space:nowrap}}
+
+/* Tabletop: the board column is a wooden table; the framed island, the dice and your hand sit on it. */
+.board-column{position:relative;background:radial-gradient(ellipse at 50% 38%,#bb8a5c 0%,#a6754a 55%,#8a5d37 100%)}
+.board-column::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,#0000 0 3px,#00000009 3px 4px,#0000 4px 11px),repeating-linear-gradient(0deg,#0000 0 138px,#0000001c 138px 140px)}
+.board-column>*{position:relative}
+.board-heading{padding:14px 24px 0;align-items:center}
+.table-line{font-size:11px;letter-spacing:.4px;color:#f6e8cc}
+.board-heading .ghost{color:#f6e8cc;border-color:#f6e8cc66}
+.board-heading .ghost:hover:not(:disabled){background:#ffffff1f}
+.board-wrap{background:none}
+.hex{stroke:#f3e7c6;stroke-width:2.5;stroke-linejoin:round}
+.number{fill:#fbf0d6;stroke:#c9ad78;stroke-width:1}
+.number-edge{fill:#b89a66}
+.wave{fill:none;stroke:#e3f1f4;stroke-width:1.6;stroke-linecap:round;opacity:.45}
+.pier{stroke:#6e4a2a;stroke-width:4;stroke-linecap:round}
+.port{fill:#f6ead0;stroke:#9f7f50;stroke-width:1.2}
+.port-text{fill:#4a3a26}
+.road line{stroke-linecap:round}
+.building,.robber{pointer-events:none}
+.table-dice{position:absolute;right:22px;bottom:16px;display:flex;gap:10px;filter:drop-shadow(0 6px 5px #2a1c1070);pointer-events:none}
+.die{display:block}
+/* Turn card and building costs read as paper cards on the table edge, not app banners. */
+.turn-card{background:#f5ead1;color:#2f2a20;border:1px solid #d6bd8b;box-shadow:0 3px 0 #d6bd8b,0 10px 18px #5a3b1a1f}
+.turn-card .eyebrow{color:#8a6a3a}
+.turn-card p{color:#5c5040}
+.turn-card .rolled{margin-top:10px;font-size:12px}
+.turn-card .rolled b{font:700 18px Georgia,serif;color:#2f2a20}
+.cost-card{background:#fbf3df;border:1px solid #d6bd8b;border-radius:10px;padding:10px 10px 8px;margin:4px 0 12px;box-shadow:0 2px 0 #e2cfa4}
+.cost-head{display:flex;justify-content:space-between;font-size:9px;letter-spacing:1.4px;color:#8a6a3a;font-weight:700;padding:0 4px 6px;border-bottom:1px dashed #d6bd8b}
+.cost-row{display:grid;grid-template-columns:1fr auto 30px;align-items:center;gap:8px;width:100%;background:none;border-radius:6px;padding:8px 4px;text-align:left;font-size:12px;border-bottom:1px solid #eadfc4}
+.cost-row:last-of-type{border-bottom:0}
+.cost-row:disabled{opacity:.55}
+.cost-row.selected{background:#f1d99c}
+.cost-row:hover:not(:disabled){background:#f4e4bd}
+.cost-icons{display:flex;gap:1px}
+.cost-vp{text-align:center;font-weight:700;color:#8a6a3a}
+.cost-foot{font-size:10px;color:#8a7a5c;margin:6px 4px 0}
+/* Around the table: labelled stats, a colour stripe for whoever is up, and the supply as card stacks. */
+.player-meta{gap:4px}
+.stat{display:inline-flex;align-items:center;gap:3px}
+.player.active{box-shadow:inset 4px 0 0 var(--player),0 4px 12px #22333306}
+.avatar{border:1px solid #0000002e}
+.badge.award{background:#f1dfae;color:#6b4e1c}
+.supply-label{margin-top:22px}
+.supply{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-top:10px}
+.supply span{border:0;padding:0}
+.stack{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 4px;border-radius:6px;background:linear-gradient(var(--terrain) 0 56%,#fffaf0 56%);border:1px solid #cbbf9f;box-shadow:2px 2px 0 -1px #fffaf0,2px 2px 0 0 #cbbf9f,4px 4px 0 -1px #fffaf0,4px 4px 0 0 #cbbf9f}
+.stack b{font-size:11px;color:#3a3326}
+.stack.deck{background:#355650;border-color:#203a36;box-shadow:2px 2px 0 -1px #355650,2px 2px 0 0 #203a36,4px 4px 0 -1px #355650,4px 4px 0 0 #203a36}
+.stack.deck b,.deck-back{color:#f1e2b6}
+.deck-back{font-size:15px;line-height:20px}
+/* Game over: a proper moment with a scoreboard. */
+.winner{background:#f5e3b3 radial-gradient(circle at 85% 0%,#fff3cf,#0000 60%);border:2px solid #c9a24f;box-shadow:0 3px 0 #c9a24f,0 12px 24px #5a3b1a30}
+.winner h2{font-size:28px;margin:10px 0 4px}
+.scoreboard{width:100%;border-collapse:collapse;font-size:11px;margin:14px 0}
+.scoreboard th{font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;color:#8a6a3a;text-align:center;padding:4px 2px;border-bottom:1px solid #d9bd7c}
+.scoreboard th:first-child,.scoreboard td:first-child{text-align:left}
+.scoreboard td{text-align:center;padding:6px 2px;border-bottom:1px solid #e9d6a5}
+.scoreboard tr.won td{font-weight:700;background:#fff4d2}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--player);border:1px solid #0004;margin-right:6px;vertical-align:-1px}
+.badge.ready{background:#cfe6c4;color:#24502b;font-weight:700}
+@media(max-width:620px){.table-dice{right:12px;bottom:10px;gap:6px}.table-dice .die{width:34px;height:34px}.board-heading{padding:12px 16px 0}}
+
+/* The whole play area is the table: wood under everything, with the panels laid on it as paper mats. */
+.game-layout{position:relative;background:radial-gradient(ellipse at 50% 40%,#bb8a5c 0%,#a6754a 50%,#875a34 100%)}
+.game-layout::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,#0000 0 3px,#00000009 3px 4px,#0000 4px 11px),repeating-linear-gradient(0deg,#0000 0 138px,#0000001c 138px 140px)}
+.game-layout>*{position:relative}
+.board-column,.board-column::before{background:none}
+.sidebar,.control-sidebar{background:none;border:0}
+.sidebar .section-label .eyebrow,.sidebar .section-label .fine,.sidebar>.fine,.control-sidebar .section-label .eyebrow,.control-sidebar .section-label .fine,.waiting{color:#f6e8cc}
+.player{background:#f7eedb;border:1px solid #d6bd8b;box-shadow:0 3px 6px #2a1c1033}
+.player.active{background:#fffaf0;border-color:#c9a24f}
+.log{background:#fbf3df;border:1px solid #d6bd8b;border-radius:10px;padding:14px 14px 6px;box-shadow:0 3px 6px #2a1c1033}
+.log .section-label .eyebrow,.log .section-label .fine{color:#8a6a3a}
+.log-item{border-bottom-color:#eadfc4}
+.panel{background:#fbf3df;border-color:#d6bd8b;box-shadow:0 3px 6px #2a1c1033}
+/* Buttons on the table are tactile tokens with a pressed edge. */
+.control-sidebar button.ghost{background:#fbf3df;border:1px solid #d6bd8b;box-shadow:0 3px 0 #c8ad78}
+.control-sidebar button.primary{background:linear-gradient(#7a5131,#5e3c22);color:#fbefd2;box-shadow:0 3px 0 #3a2413,0 6px 10px #2a1c1040}
+.control-sidebar button.gold{box-shadow:0 3px 0 #b48a3e,0 6px 10px #2a1c1040}
+.control-sidebar button:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+.offer{background:#fffaf0;border:1px dashed #c9a24f;border-radius:8px;padding:10px;margin-top:8px}
+/* Your hand: real cards, fanned and stacked, held at the bottom edge of the table. */
+.hand{background:none;border-top:0;padding:4px 24px 18px}
+.hand-top .eyebrow,.hand-top .fine{color:#f6e8cc}
+.hand-row{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+.hand-cards{display:flex;padding:8px 14px 0 4px}
+.hand .resource-card{flex:none;width:76px;height:106px;margin-right:-4px;border:1px solid #cbbf9f;border-radius:8px;background:#fffaf0;transform:rotate(var(--tilt)) translateY(var(--drop));transform-origin:50% 120%;box-shadow:0 4px 8px #2a1c1040;display:flex;flex-direction:column;align-items:center;overflow:visible;transition:transform .15s}
+.hand .resource-card:hover{transform:rotate(var(--tilt)) translateY(calc(var(--drop) - 8px))}
+.hand .resource-card .resource-art{width:calc(100% - 10px);height:62px;margin:5px 5px 0;border-radius:5px;background:var(--terrain);display:grid;place-items:center;box-shadow:inset 0 0 0 1px #0000001a}
+.hand .resource-card span{font-size:8.5px;font-weight:700;letter-spacing:1px;color:#5a5040;margin-top:7px}
+.hand .resource-card b{position:absolute;top:-9px;right:-9px;min-width:25px;height:25px;border-radius:13px;background:#203a3f;color:#fff;font-size:13px;display:grid;place-items:center;padding:0 6px;border:2px solid #fffaf0}
+.hand .resource-card.stacked{box-shadow:3px -3px 0 -1px #fffaf0,3px -3px 0 0 #cbbf9f,0 4px 8px #2a1c1040}
+.hand .resource-card.deep{box-shadow:3px -3px 0 -1px #fffaf0,3px -3px 0 0 #cbbf9f,6px -6px 0 -1px #fffaf0,6px -6px 0 0 #cbbf9f,0 4px 8px #2a1c1040}
+.hand .resource-card.empty{background:#fffaf026;border:1.5px dashed #f6e8cc99;box-shadow:none}
+.hand .resource-card.empty .resource-art{opacity:.35;filter:grayscale(.6)}
+.hand .resource-card.empty span{color:#f6e8cc}
+.hand .resource-card.empty b{background:#f6e8cc66;border-color:#0000;color:#2f2a20}
+.dev-cards .dev-card{width:68px;height:96px;padding:6px 4px;border-radius:8px;background:#2f4d48 linear-gradient(#ffffff17,#0000);border:1px solid #1c3330;color:#f4e6c0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:9px;line-height:1.15;text-align:center;box-shadow:0 4px 8px #2a1c1040;position:relative}
+.dev-cards .dev-card svg{background:#f5ead1;border-radius:50%;padding:5px;width:38px;height:38px}
+.dev-cards .dev-card small{position:absolute;top:4px;right:5px;font-size:7.5px;background:#f2c94c;color:#3a2a10;border-radius:3px;padding:1px 3px}
+.dev-cards .dev-card:not(:disabled){box-shadow:0 0 0 2px #f2c94c,0 6px 12px #2a1c1050}
+.dev-cards .dev-card:disabled{opacity:1;filter:saturate(.55) brightness(.9)}
+.dev-cards .dev-card.vp{background:#7a5a2a linear-gradient(#ffffff17,#0000);border-color:#4f3916}
+/* Card pickers (trade, discard, invention) and single choices (supply trade, monopoly). */
+.picker,.choice{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0 8px}
+.pick{position:relative}
+.pick-card{width:100%;padding:0 0 5px;border-radius:7px;background:#fffaf0;border:1px solid #cbbf9f;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;box-shadow:0 2px 0 #e2d4b2}
+.pick-art{width:calc(100% - 6px);margin:3px 3px 0;height:30px;border-radius:4px;background:var(--terrain);display:grid;place-items:center}
+.pick-name,.choice-card span{color:#5a5040;text-transform:capitalize}
+.pick-count{font-size:15px;color:#2f2a20}
+.pick.picked .pick-card{border-color:#c9a24f;box-shadow:0 0 0 2px #f2c94c}
+.pick-less{position:absolute;top:-7px;right:-6px;width:20px;height:20px;padding:0;border-radius:50%;background:#203a3f;color:#fff;font-size:13px;line-height:20px}
+.pick-less:disabled{display:none}
+.pick.none .pick-card{opacity:.4}
+.choice-card{padding:4px 2px 5px;border-radius:7px;background:linear-gradient(var(--terrain) 0 58%,#fffaf0 58%);border:1px solid #cbbf9f;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px}
+.choice-card.chosen{box-shadow:0 0 0 2.5px #f2c94c;border-color:#c9a24f}
+.ratio{font-weight:700}
+.pick-total{margin:2px 0 10px}
+.lobby .badge{font-size:11px;padding:5px 9px}
+@media(max-width:850px){.sidebar{flex-wrap:wrap}.sidebar .player{flex:1 1 calc(50% - 8px);min-width:0}}
+@media(max-width:620px){.hand{padding:4px 12px 14px}.hand .resource-card{width:60px;height:86px;margin-right:-6px}.hand .resource-card .resource-art{height:48px}.hand .resource-card .resource-art svg{width:28px;height:28px}.dev-cards .dev-card{width:56px;height:80px;font-size:8px}.dev-cards .dev-card svg{width:30px;height:30px}.hand-row{gap:14px}}
+
+/* Toasts never block a click on the cards beneath them. */
+#toast{pointer-events:none}
+
+/* Review round C: the turn card stays in view, the costs card sits askew like a real reference card, clearer labels. */
+.control-sidebar .turn-card,.control-sidebar .winner{position:sticky;top:0;z-index:2}
+.cost-card{transform:rotate(-1.2deg);margin:10px 2px 16px}
+.cost-card:hover{transform:none}
+.deck-name{font-size:7.5px;letter-spacing:1px;font-weight:700}
+.scoreboard th{font-size:9.5px;color:#6b4e1c}
+.board-heading .ghost{background:#fbf3df;color:#2f2a20;border:1px solid #d6bd8b;box-shadow:0 3px 0 #c8ad78}
+.board-heading .ghost:hover:not(:disabled){background:#fffaf0}
