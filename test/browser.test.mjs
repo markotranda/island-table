@@ -182,7 +182,8 @@ test('browser: discards, player and bank trades, and every development card',{sk
     // Two players post offers at the same moment: both reach the active player live, and cancelling one must leave the other.
     await openPanel(B,'trade','trade');await fill(B,'trade',{'give-brick':1,'want-wood':1});
     await openPanel(C,'trade','trade');await fill(C,'trade',{'give-wool':1,'want-ore':1});
-    await Promise.all([submit(B,'trade'),submit(C,'trade')]);
+    // Submit both forms in the same instant through the app's own handler: a mouse click can miss when the other offer arrives and shifts the layout mid-click.
+    await Promise.all([B,C].map(page=>page.eval(`document.getElementById('trade').requestSubmit()`)));
     for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);
     await A.waitFor(`document.querySelectorAll('.offer').length===2`,{message:'Offers did not reach the active player'});
     // Arrival order is up to the race, so cancel C's offer by its text rather than its position.

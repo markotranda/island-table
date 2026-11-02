@@ -30,6 +30,7 @@ export async function launch(){
     const cmd=(method,params)=>send(method,params,sessionId),errors=[],loads=[];
     listeners.add(m=>{if(m.sessionId!==sessionId)return;if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);if(m.method==='Page.loadEventFired')loads.splice(0).forEach(r=>r());});
     await cmd('Page.enable');await cmd('Runtime.enable');
+    if(process.env.THROTTLE)await cmd('Emulation.setCPUThrottlingRate',{rate:Number(process.env.THROTTLE)});
     await cmd('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768});
     // Record clipboard writes; the system clipboard is shared between contexts and unavailable headless.
     await cmd('Page.addScriptToEvaluateOnNewDocument',{source:'window.__copied=[];Object.defineProperty(navigator,"clipboard",{value:{writeText:async t=>{window.__copied.push(t)}}});'});
