@@ -136,3 +136,85 @@
 .scoreboard th{font-size:9.5px;color:#6b4e1c}
 .board-heading .ghost{background:#fbf3df;color:#2f2a20;border:1px solid #d6bd8b;box-shadow:0 3px 0 #c8ad78}
 .board-heading .ghost:hover:not(:disabled){background:#fffaf0}
+
+/* Everything below the top bar is the table: the home page, the lobby and the game share the same wood. */
+body{background:#a6754a radial-gradient(ellipse at 50% 30%,#bb8a5c 0%,#a6754a 55%,#875a34 100%) fixed}
+#app{min-height:100vh}
+.landing,.lobby,.landing-footer{position:relative}
+.intro>.eyebrow,.lobby .eyebrow.muted{color:#f3d9a4}
+.intro h1,.lobby h1{color:#fbefd6;text-shadow:0 2px 0 #5a3a1e55}
+.intro h1 em{color:#f6cf86}
+.intro p{color:#f1e2c4}
+.landing-footer{color:#f1e2c4;border-top-color:#f6e8cc33}
+.illustration{height:300px;filter:drop-shadow(0 12px 14px #2a1c1066)}
+/* Forms are paper cards laid on the table, with wooden buttons. */
+.form-card{background:#fbf3df;border:1px solid #d6bd8b;box-shadow:0 4px 0 #d6bd8b,0 18px 36px #2a1c1040}
+.tabs{background:#efe2c2}
+.tabs button.selected{background:#fffaf0}
+.form-card input,.form-card select{background:#fffaf0;border-color:#d6bd8b}
+.form-card button.primary{background:linear-gradient(#7a5131,#5e3c22);color:#fbefd2;box-shadow:0 3px 0 #3a2413,0 6px 10px #2a1c1040}
+.form-card button.gold{box-shadow:0 3px 0 #b48a3e}
+.form-card button.ghost{background:#fffaf0;border-color:#d6bd8b;box-shadow:0 2px 0 #d6bd8b}
+.lobby .pill{background:#fbf3df;border-color:#d6bd8b;font-size:12px;padding:8px 14px}
+/* Lobby: the empty island waits, each seat is a mat in the player's colour, and the code is a handwritten place card. */
+.lobby{max-width:980px}
+.lobby-grid{grid-template-columns:1.15fr .85fr;align-items:start}
+.lobby-table .illustration{height:260px;margin:0 0 6px}
+.lobby-seats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lobby-seat{margin:0;padding:10px 12px;gap:10px;background:var(--mat,#fbf3df);border:1px solid #0000002a;box-shadow:inset 0 0 0 3px #ffffff55,0 3px 6px #2a1c1033}
+.lobby-seat.empty{background:#fffaf01f;border:1.5px dashed #f6e8cc99;color:#f6e8cc;box-shadow:none;justify-content:center;min-height:64px}
+.lobby-seat.is-ready{box-shadow:inset 0 0 0 3px #ffffff55,0 0 0 2px #7fb26a,0 3px 6px #2a1c1033}
+.seat-pieces{flex:none}
+.place-card{transform:rotate(.8deg);background:#fffaf0}
+.place-code{font:28px/1.2 'Segoe Print','Bradley Hand','Comic Sans MS',cursive;color:#3a2f22;letter-spacing:2px;text-align:center;background:none!important;border:0!important;border-bottom:2px dashed #d6bd8b!important;border-radius:0;padding:8px 0}
+/* Player mats: tinted in the player's colour, holding fans of cards and any award tiles. */
+.player{background:var(--mat);border:1px solid #0000002a;box-shadow:inset 0 0 0 3px #ffffff55,0 3px 6px #2a1c1033}
+.player.active{background:var(--mat);border-color:#2a2119;box-shadow:inset 0 0 0 3px #ffffff77,0 0 0 2px var(--player),0 6px 12px #2a1c1044}
+.player-meta{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;align-items:end;margin-top:10px;color:#3a3326}
+.stat b{font-size:10px}
+.fan{position:relative;display:inline-block;width:24px;height:17px;margin-right:2px}
+.fan i{position:absolute;left:calc(var(--k)*3.2px);bottom:0;width:11px;height:16px;border-radius:2px;border:1px solid #2a2119aa;transform:rotate(calc(var(--k)*6deg - 6deg));transform-origin:50% 100%}
+.fan.res i{background:#355650 repeating-linear-gradient(45deg,#ffffff1c 0 2px,#0000 2px 4px)}
+.fan.dev i{background:#7a5a2a repeating-linear-gradient(45deg,#ffffff1c 0 2px,#0000 2px 4px)}
+.fan.knight i{background:#f5ead1 radial-gradient(circle at 50% 45%,#8fa0ae 0 3px,#0000 3.5px)}
+.fan i.none{left:0;transform:none;border:1px dashed #2a211966;background:none}
+.award-tile{display:inline-flex;align-items:center;gap:5px;padding:4px 7px 4px 4px;border-radius:5px;background:#f2d58a linear-gradient(#ffffff40,#0000);border:1px solid #8a6a2a;box-shadow:0 2px 0 #8a6a2a;font-size:7.5px;font-weight:800;letter-spacing:.6px;color:#4a3410}
+.award-tile svg{width:18px;height:18px;background:#fbf3df;border-radius:50%;padding:2px}
+.award-tile b{font-size:10px}
+.mat-awards,.supply-awards{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.supply-awards{margin-top:14px}
+.supply-awards .award-tile{opacity:.75}
+/* Trade offers lie on the table as paper slips with mini cards. */
+.trade-table{margin:14px 0}
+.offer{background:#fffaf0;border:1px solid #d6bd8b;border-left:5px solid var(--player);border-radius:6px;padding:10px 10px 8px;margin-top:8px;box-shadow:0 3px 6px #2a1c1033;transform:rotate(-.6deg)}
+.offer:nth-child(odd){transform:rotate(.5deg)}
+.offer-who{font-size:12px}
+.offer-who .dot{background:var(--player)}
+.offer-for{font-size:10px;color:#8a7a5c;margin:4px 0}
+.offer-cards{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.mini-card{display:inline-flex;align-items:center;gap:3px;padding:3px 6px 3px 3px;border-radius:5px;border:1px solid #cbbf9f;background:linear-gradient(90deg,var(--terrain) 0 24px,#fffaf0 24px);font-size:10px;text-transform:capitalize}
+.mini-card .ico{margin:0 3px 0 1px}
+.offer-actions{margin-top:8px;display:flex;gap:6px}
+.offer-actions button{margin:0}
+/* The turn card carries a wax seal in the active player's colour. */
+.turn-card{position:relative}
+.seal{position:absolute;top:-10px;right:14px;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff55,#0000 45%),var(--player);border:2px solid #0000003a;box-shadow:0 3px 6px #2a1c1055,inset 0 0 0 4px #00000018;display:grid;place-items:center;font:700 15px Georgia,serif;color:#2a2119}
+/* The story so far is a lined notepad. */
+.log{background:#fffdf3 repeating-linear-gradient(#0000 0 29px,#c9dbe6 29px 30px);border-left:3px double #e3a29b;transform:rotate(-.4deg)}
+.log-item{border-bottom:0;font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:#4a4236;line-height:1.3;padding:8px 0 8px}
+.log-item:first-child{color:#2a2119}
+@media(max-width:850px){.lobby-grid{grid-template-columns:1fr}.lobby-seats{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.lobby-seats{grid-template-columns:1fr}.illustration{height:220px}.lobby-table .illustration{height:200px}.place-code{font-size:22px}}
+
+/* Review round 4: the top bar is the table's dark wooden rail, with the connection as a lamp; small readability fixes. */
+.topbar{background:linear-gradient(#5a3a22,#45291a);border-bottom:3px solid #2e1b10;box-shadow:0 2px 8px #0005}
+.brand{color:#fbefd6}.brand-mark{color:#f2c46e}.topbar .eyebrow{color:#d9b98a!important}
+.topbar button.ghost{background:#fbf3df;color:#2f2a20;border:1px solid #d6bd8b;box-shadow:0 2px 0 #c8ad78}
+.topbar .pill{background:#2e1b10;border-color:#6d4a2c;color:#f6e8cc}
+.status-dot{background:#7fe08a;box-shadow:0 0 6px 2px #7fe08a99}
+.seal{top:14px;right:14px;width:34px;height:34px;font-size:14px}
+.fan:empty{width:0;margin:0}
+.scoreboard td:first-child{white-space:nowrap}
+.scoreboard th{color:#4a3410;font-size:10px}
+.deck-name{color:#f1e2b6;font-size:8px}
+.log-list{padding-bottom:10px}
