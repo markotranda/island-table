@@ -5,7 +5,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomInt, createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { newGame, addPlayer, apply, view } from './lib/engine.mjs';
+import { newGame, addPlayer, apply, view, upgrade } from './lib/engine.mjs';
 
 const root=dirname(fileURLToPath(import.meta.url)), data=resolve(process.env.DATA_DIR||resolve(root,'data'));
 mkdirSync(data,{recursive:true});
@@ -17,7 +17,7 @@ const loopback=host=>/^(localhost|127\.\d+\.\d+\.\d+|\[::1\])(:\d+)?$/i.test(hos
 function lanAddress(){if(existsSync('/.dockerenv'))return null;const skip=/vEthernet|WSL|docker|^br-|^veth|VirtualBox|VMware|Hyper-V|Bluetooth|Loopback|Tailscale|ZeroTier/i;const all=Object.entries(networkInterfaces()).filter(([n])=>!skip.test(n)).flatMap(([,a])=>a).filter(a=>a.family==='IPv4'&&!a.internal);return (all.find(a=>/^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address))||all[0])?.address||null;}
 function inviteOrigin(req){if(process.env.PUBLIC_ORIGIN)return process.env.PUBLIC_ORIGIN;const host=req.headers.host||'';if(!loopback(host))return `http://${host}`;const ip=lanAddress(),port=host.match(/:(\d+)$/)?.[1];return ip?`http://${ip}${port&&port!=='80'?':'+port:''}`:null;}
 const tokenHash=t=>createHash('sha256').update(t).digest('hex');
-const read=id=>{const row=db.prepare('SELECT state FROM rooms WHERE id=?').get(id);if(!row)throw Object.assign(new Error('Room not found. Check the invitation code.'),{status:404});return JSON.parse(row.state);};
+const read=id=>{const row=db.prepare('SELECT state FROM rooms WHERE id=?').get(id);if(!row)throw Object.assign(new Error('Room not found. Check the invitation code.'),{status:404});return upgrade(JSON.parse(row.state));};
 const save=g=>db.prepare('INSERT INTO rooms(id,state) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(g.id,JSON.stringify(g));
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
 function json(res,status,body){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));}
@@ -37,7 +37,7 @@ const server=http.createServer(async(req,res)=>{
       rate(req);
       if(req.headers.origin){const allowed=[process.env.PUBLIC_ORIGIN,`http://${req.headers.host}`];if(!allowed.includes(req.headers.origin))throw Object.assign(new Error('Origin is not allowed.'),{status:403});}
       if(req.method==='POST'&&url.pathname==='/api/rooms') {
-        const b=await body(req);const result=transaction(()=>{const g=newGame(randomBytes(6).toString('hex'),b.count,b.setup);return register(g,b.name);});return json(res,201,result);
+        const b=await body(req);const result=transaction(()=>{const g=newGame(randomBytes(6).toString('hex'),b.map,b.setup);return register(g,b.name);});return json(res,201,result);
       }
       const match=url.pathname.match(/^\/api\/rooms\/([a-f0-9]{12})(?:\/(join|events|commands))?$/);if(!match)return json(res,404,{error:'Endpoint not found.'});
       const [,id,action]=match;

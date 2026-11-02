@@ -21,8 +21,8 @@ async function startServer(){
 const phaseLabel=page=>page.text('.turn-card .eyebrow');
 const noOverflow=page=>page.eval('document.documentElement.scrollWidth<=window.innerWidth');
 
-async function createTable(page,base,name,count,setup){
-  await page.goto(base);await page.type('#nickname',name);await page.select('#count',String(count));await page.select('#setup',setup);
+async function createTable(page,base,name,map,setup){
+  await page.goto(base);await page.type('#nickname',name);await page.select('#map',map);await page.select('#setup',setup);
   await page.click('#entry button.primary');await page.waitFor(`document.querySelector('[data-command="ready"]')`);
 }
 async function joinByInvite(page,link,name){
@@ -73,7 +73,7 @@ async function playTurn(pages,page){await page.click('[data-command="roll"]');aw
 // Seats players in join order, so pages[i] is seat i, readies everyone and starts.
 async function seatTable(browser,server,count,setup){
   const pages=[];for(let i=0;i<count;i++)pages.push(await browser.newPage());
-  await createTable(pages[0],server.host,'Seat 0',count,setup);const room=await pages[0].eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
+  await createTable(pages[0],server.host,'Seat 0',count>4?'extended':'base',setup);const room=await pages[0].eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
   for(let i=1;i<count;i++)await joinByInvite(pages[i],`${server.invite}/?room=${room}`,`Seat ${i}`);
   for(const page of pages){await page.click('[data-command="ready"]');await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
   await pages[0].click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);
@@ -99,21 +99,24 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
   const server=await startServer(),browser=await launch();const pages=[];
   try{
     const host=await browser.newPage(),ana=await browser.newPage(),ben=await browser.newPage();pages.push(host,ana,ben);
-    await createTable(host,server.host,'Host',3,'variable');
+    await createTable(host,server.host,'Host','base','variable');
     await host.click('[data-ui="invite"]');
     const link=await host.waitFor('window.__copied.at(-1)');const room=await host.eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
     assert.equal(link,`${server.invite}/?room=${room}`,'invites use the advertised address, not localhost');
 
     await joinByInvite(ana,link,'Ana');await joinByInvite(ben,link,'Ben');
-    await host.waitFor(`!document.body.textContent.includes('Waiting for a friend')`,{message:'Lobby did not show joined players live'});
+    await host.waitFor(`document.querySelector('.lobby-top .pill')?.textContent.startsWith('3 / 4')`,{message:'Lobby did not show joined players live'});
     assert.match(await host.text(),/Ana[\s\S]*Ben/);
     assert.ok(await host.eval(`document.querySelector('[data-command="start"]').disabled`),'start waits for everyone to be ready');
+    assert.equal(await host.text('[data-ui="start-hint"]'),'Waiting for you, Ana and Ben to get ready.');
     // The recovery key is offered in the lobby; Ben uses it on a new device mid-game below.
     await ben.click('[data-ui="seat"]');await ben.click('[data-ui="copy-seat"]');const key=await ben.waitFor('window.__copied.at(-1)');await ben.click('[data-ui="close"]');
     // Everyone readies at once: conflicting revisions must resolve without asking anyone to click again.
     await Promise.all(pages.map(page=>page.click('[data-command="ready"]')));
     await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`,{message:'Simultaneous ready clicks were not all accepted'});
     for(const page of pages)assert.doesNotMatch(await page.text('#toast'),/try again/);
+    // Three of four seats are enough: the host may start without waiting for the table to fill.
+    assert.match(await host.text('[data-ui="start-hint"]'),/Set sail now, or wait for more friends/);
     await host.click('[data-command="start"]');
     for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`,{message:'Game did not start on every screen'});
     assert.match(await phaseLabel(host),/FOUNDATIONS/);
@@ -149,7 +152,8 @@ test('browser: phone-width home and lobby fit without horizontal scrolling',{ski
   try{
     page=await browser.newPage({width:375,height:812});
     await page.goto(server.host);assert.ok(await noOverflow(page),'home');
-    await createTable(page,server.host,'Solo',4,'fixed');assert.ok(await noOverflow(page),'lobby');
+    await createTable(page,server.host,'Solo','base','fixed');assert.ok(await noOverflow(page),'lobby');
+    assert.match(await page.text('[data-ui="start-hint"]'),/at least one more player/,'a lone host is told why they cannot start');
     await page.click('[data-ui="invite"]');
     assert.match(await page.waitFor('window.__copied.at(-1)'),new RegExp(`^${server.invite.replace(/[.]/g,'\\.')}/\\?room=[a-f0-9]{12}$`));
     assert.deepEqual(page.errors,[]);

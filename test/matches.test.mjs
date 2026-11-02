@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {newGame,addPlayer,apply,legalRoads,legalSettlements,legalCities,tradeRatio,costs,R,emptyHand} from '../lib/engine.mjs';
 
 // Test-only players exercise actual commands; no resource grants or state edits.
-for(const count of [3,4,5,6])test(`${count} players complete an entire saved-and-restored game`,()=>{
+for(const count of [2,3,4,5,6])test(`${count} players complete an entire saved-and-restored game`,()=>{
   let seed=143+count;const random=n=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return Math.floor(seed/4294967296*n);};
-  let g=newGame('simulation',count,'variable');for(let p=0;p<count;p++){addPlayer(g,String(p),`Test ${p}`);g.players[p].ready=true;}g=apply(g,0,{type:'start'},random);
+  let g=newGame('simulation',count>4?'extended':'base','variable');for(let p=0;p<count;p++){addPlayer(g,String(p),`Test ${p}`);g.players[p].ready=true;}g=apply(g,0,{type:'start'},random);
   const send=(p,command)=>{g=apply(g,p,command,random);g.revision++;if(g.revision%25===0)g=JSON.parse(JSON.stringify(g));};
   let actions=0;
   while(g.phase!=='finished'&&actions++<15000){

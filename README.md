@@ -1,6 +1,6 @@
 # Island Table
 
-A private 3-6 player browser game following the 2025 rules of a classic island-trading board game and its paired-player expansion. Original SVG visuals, live multiplayer, hidden hands, SQLite saves, and Docker hosting. No account, npm install, external assets, telemetry, or cloud service is needed.
+A private 2-6 player browser game following the 2025 rules of a classic island-trading board game and its paired-player expansion. Original SVG visuals, live multiplayer, hidden hands, SQLite saves, and Docker hosting. No account, npm install, external assets, telemetry, or cloud service is needed.
 
 ## Run with Docker
 
@@ -8,7 +8,7 @@ A private 3-6 player browser game following the 2025 rules of a classic island-t
 docker compose up -d --build
 ```
 
-Open **http://localhost:8080**. Create a table, choose 3-6 players and fixed/variable setup, and share the invite. Every seat must be filled and ready before the host starts. Use separate browser profiles or devices for different players. Multiple tabs in the same browser reconnect to the same saved seat.
+Open **http://localhost:8080**. Create a table, choose the **Base** map (2-4 players) or **Extended** map (2-6 players) and a fixed or variable setup, and share the invite. The host can set sail once at least two players have joined and everyone is ready; the lobby says what it is still waiting for. Nobody can join after the game starts. Use separate browser profiles or devices for different players. Multiple tabs in the same browser reconnect to the same saved seat.
 
 Docker Desktop must be using **Linux containers**. On this Windows machine the explicit command is:
 
