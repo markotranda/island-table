@@ -24,10 +24,14 @@ async function connect(){
   }
 }
 async function enter(s){session=s;room=s.room;remember();state=await request(`/api/rooms/${room}`);render();connect();}
-async function command(type,extra={}){
-  if(busy)return;busy=true;const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}};
+async function command(type,extra={},retries=5){
+  if(busy)return;busy=true;const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},wasReady=state.players[state.me]?.ready;
   try{let next;try{next=await request(`/api/rooms/${session.room}/commands`,payload);}catch(e){if(e instanceof TypeError)next=await request(`/api/rooms/${session.room}/commands`,payload);else throw e;}mode='';if(next.revision>=state.revision)state=next;render();}
-  catch(e){toast(e.message);if(e.status===409){state=await request(`/api/rooms/${session.room}`);render();}}
+  catch(e){
+    if(e.status===409){state=await request(`/api/rooms/${session.room}`);render();
+      // Friends often ready up at the same moment; readiness does not depend on what changed, so retry instead of asking them to click again.
+      if(retries>0&&type==='ready'&&state.phase==='lobby'&&state.players[state.me]?.ready===wasReady){busy=false;return command(type,extra,retries-1);}}
+    toast(e.message);}
   finally{busy=false;}
 }
 function header(){return `<header class="topbar"><div class="brand"><span class="brand-mark">⬡</span> island table<span class="eyebrow" style="font-family:system-ui;font-size:8px;color:#9b9d8c;margin-left:5px">PRIVATE EDITION</span></div><div class="right">${state?`<span class="pill"><span class="status-dot"></span><span class="connection-label">${connected?'Connected':'Connecting…'}</span></span><button class="ghost small" data-ui="invite">Invite friends ↗</button>`:'<span class="pill">A little island. A good evening.</span>'}<button class="ghost small" data-ui="help">How to play</button>${state?'<button class="ghost small" data-ui="home" title="Return home; your seat remains saved">⌂</button>':''}</div></header>`;}
