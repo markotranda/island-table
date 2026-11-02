@@ -18,7 +18,7 @@ docker --context desktop-linux compose up -d --build
 
 Compose names the project after its folder: in a folder called `island-table` the container is `island-table-game-1` and the saved-game volume `island-table_game-data`. The app listens on container port 3000, published to host port 8080. The default binding is local-only (`127.0.0.1`).
 
-For friends on your LAN, copy `.env.example` to `.env`, set `BIND_ADDRESS=0.0.0.0`, recreate with `docker compose up -d`, and use `http://YOUR-COMPUTER-IP:8080`. A localhost invite works only on the host computer. For an Internet server, keep the default local binding and put an HTTPS reverse proxy in front; set `PUBLIC_ORIGIN=https://your-game-domain`.
+For friends on your LAN, copy `.env.example` to `.env`, set `BIND_ADDRESS=0.0.0.0`, recreate with `docker compose up -d`, and also set `PUBLIC_ORIGIN=http://YOUR-COMPUTER-IP:8080` so invitation links point there. Inside Docker the app cannot see your computer's network address, so without `PUBLIC_ORIGIN` an invite copied from localhost works only on the host computer (the app warns when this happens). For an Internet server, keep the default local binding and put an HTTPS reverse proxy in front; set `PUBLIC_ORIGIN=https://your-game-domain`.
 
 Example Caddy configuration (Caddy running on the host):
 
@@ -40,7 +40,7 @@ Requires Node.js 24 or newer:
 node server.mjs
 ```
 
-Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are optional environment variables. Direct runs save to `data/games.sqlite`; Docker saves to `/data/games.sqlite` on the named volume.
+Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are optional environment variables. Direct runs listen on all interfaces, and invitations copied from localhost automatically use this computer's LAN address (for example `http://192.168.0.35:3000`); set `PUBLIC_ORIGIN` to override it. Windows Firewall may ask to allow Node.js on private networks the first time; allow it so friends can connect. Direct runs save to `data/games.sqlite`; Docker saves to `/data/games.sqlite` on the named volume.
 
 ## Play and reconnect
 

@@ -14,7 +14,7 @@ test('HTTP rooms: authentication, idempotency, live private views, stale revisio
   async function req(path,token,body){const res=await fetch(base+path,{method:body?'POST':'GET',headers:{...(token?{Authorization:`Bearer ${token}`} :{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:res.status,body:await res.json()};}
   let controller;
   try{
-    await start();const host=(await req('/api/rooms',null,{name:'Host',count:3,setup:'fixed'})).body;const path=`/api/rooms/${host.room}`;
+    await start();const config=(await req('/api/config')).body;assert.ok(config.inviteOrigin===null||/^http:\/\/(?!127\.|localhost)[^/]+:\d+$/.test(config.inviteOrigin),'invites never point at loopback');const host=(await req('/api/rooms',null,{name:'Host',count:3,setup:'fixed'})).body;const path=`/api/rooms/${host.room}`;
     const a=(await req(path+'/join',null,{name:'Guest A'})).body,b=(await req(path+'/join',null,{name:'Guest B'})).body;const seats=[host,a,b];
     assert.equal((await req(path)).status,401);assert.equal((await req(path,'a'.repeat(64))).status,401);
     assert.equal((await req(path+'/join',null,{name:'Fourth'})).status,400);
