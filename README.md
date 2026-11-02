@@ -60,6 +60,8 @@ node --test test/*.test.mjs
 
 Tests cover board inventories and topology, fixed and snake setups at all player counts, legal moves, trades, production shortages, robbery and discards, all development actions, paired turns, scoring, privacy, resource conservation, complete simulated games, HTTP authentication, duplicate commands, stale revisions, live streams, and server restart recovery. Network integration tests create isolated temporary databases in ignored `tmp/` directories.
 
+Browser tests play through the real interface in headless Chrome, Chromium, or Edge with several isolated players: invitation links, the live lobby, simultaneous readying, setup placement, turns including the robber, reload reconnection, seat recovery on another device, and phone-width layout. They use an installed browser (set `BROWSER=/path/to/chrome` to choose one) and are skipped when none is found.
+
 ## Operate and back up
 
 ```sh
@@ -98,7 +100,7 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 | `lib/board.mjs` | Hex/vertex/edge graph, board presets, ports, token sequences |
 | `server.mjs` | HTTP API, SSE transport, authentication, SQLite transactions |
 | `public/` | Responsive interface and original board rendering |
-| `test/` | Rule, complete-match, and server integration tests |
+| `test/` | Rule, complete-match, server integration, and headless browser tests |
 | `scripts/backup.mjs` | Consistent SQLite backup utility |
 | `RULES.md` | Source mapping and documented conventions |
 | `PLAN.md` | Original proposal and implementation decisions |
