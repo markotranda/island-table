@@ -32,6 +32,24 @@ game.example.com {
 
 The live connection uses HTTP server-sent events (SSE), not WebSockets. Disable response buffering on the reverse proxy and allow long-lived connections. If the proxy runs in another container, connect it to the same Docker network and use `game:3000` instead.
 
+## Run on a home server from the published image
+
+Every push to `main` runs the tests and, if they pass, publishes `ghcr.io/markotranda/island-table` (amd64 and arm64) with the tags `latest`, `1.0.<build number>`, and `sha-<commit>`. See `.github/workflows/publish.yml`.
+
+The package is private, so log the server in once with a GitHub personal access token (classic) that has only the `read:packages` scope:
+
+```sh
+docker login ghcr.io -u markotranda
+```
+
+Copy `compose.yaml` (and optionally `.env.example` as `.env`) into a folder on the server, then start it:
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+Run the same command again to update to the newest version; saved games stay in the volume. To pin or roll back, set `IMAGE_TAG=1.0.<n>` in `.env`. Back up first with `docker compose exec game node scripts/backup.mjs /data/backup.sqlite`.
+
 ## Run directly
 
 Requires Node.js 24 or newer:
