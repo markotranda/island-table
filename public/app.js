@@ -5,7 +5,7 @@ const icons={wood:'♠',brick:'▰',wool:'♧',wheat:'♜',ore:'◆',desert:'≈
 const names={knight:'Knight',monopoly:'Monopoly',invention:'Invention',roads:'Road Building',vp:'Victory Point'};
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const commandId=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
-let state=null,session=null,mode='',tab=location.search.includes('room=')?'join':'create',connected=false,busy=false,streamController=null,modal='';
+let state=null,session=null,mode='',tab=location.search.includes('room=')?'join':'create',connected=false,busy=null,streamController=null,modal='';
 const params=new URLSearchParams(location.search);let room=params.get('room')||'';
 let saved={};try{saved=JSON.parse(localStorage.getItem('island-seats')||'{}');}catch{}
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('visible'),5000);}
@@ -28,13 +28,17 @@ async function enter(s){session=s;room=s.room;remember();state=await request(`/a
 // Friends ready up and post offers at the same moment; while that context is unchanged a stale revision is retried instead of asking them to redo it.
 function retryContext(type){if(type==='ready'&&state.phase==='lobby')return `ready:${state.players[state.me]?.ready}`;if(type==='offer'&&state.phase==='action')return `offer:${state.turn}:${state.active}:${state.role}`;return null;}
 async function command(type,extra={},retries=5){
-  if(busy)return;busy=true;const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},context=retryContext(type);
-  try{let next;try{next=await request(`/api/rooms/${session.room}/commands`,payload);}catch(e){if(e instanceof TypeError)next=await request(`/api/rooms/${session.room}/commands`,payload);else throw e;}mode='';if(next.revision>=state.revision)state=next;render();}
+  // A repeat of the in-flight command (a double click) is dropped; a different one, such as a pick the live stream revealed before
+  // the response arrived, waits its turn so the click is not lost.
+  if(busy?.type===type)return;while(busy)await busy.done;let release;const mine=busy={type,done:new Promise(r=>release=r)};const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},context=retryContext(type);
+  try{let next;try{next=await request(`/api/rooms/${session.room}/commands`,payload);}catch(e){if(e instanceof TypeError)next=await request(`/api/rooms/${session.room}/commands`,payload);else throw e;}
+    // The live stream often delivers this revision first; redrawing again would replace controls mid-click.
+    const closing=mode!=='';mode='';if(next.revision>state.revision){state=next;render();}else if(closing)render();}
   catch(e){
     if(e.status===409){state=await request(`/api/rooms/${session.room}`);
-      if(retries>0&&context!==null&&retryContext(type)===context){busy=false;return command(type,extra,retries-1);}render(true);}
+      if(retries>0&&context!==null&&retryContext(type)===context){busy=null;release();return command(type,extra,retries-1);}render(true);}
     toast(e.message);}
-  finally{busy=false;}
+  finally{if(busy===mine)busy=null;release();}
 }
 function header(){return `<header class="topbar"><div class="brand"><span class="brand-mark">⬡</span> island table<span class="eyebrow" style="font-family:system-ui;font-size:8px;color:#9b9d8c;margin-left:5px">PRIVATE EDITION</span></div><div class="right">${state?`<span class="pill"><span class="status-dot"></span><span class="connection-label">${connected?'Connected':'Connecting…'}</span></span><button class="ghost small" data-ui="invite">Invite friends ↗</button>`:'<span class="pill">A little island. A good evening.</span>'}<button class="ghost small" data-ui="help">How to play</button>${state?'<button class="ghost small" data-ui="home" title="Return home; your seat remains saved">⌂</button>':''}</div></header>`;}
 function illustratedBoard(){let shapes='';const rows=[3,4,5,4,3],types=['ore','wool','wood','wheat','brick','wood','wheat','wool','desert','ore','brick','wood','wheat','wool','brick','wood','ore','wheat','wool'];let n=0;rows.forEach((length,row)=>{for(let j=0;j<length;j++){const x=200+(j-(length-1)/2)*51,y=35+row*44;const pts=Array.from({length:6},(_,i)=>{const a=(i*60-30)*Math.PI/180;return `${x+29*Math.cos(a)},${y+29*Math.sin(a)}`;}).join(' ');shapes+=`<polygon points="${pts}" fill="${terrain[types[n]]}" stroke="#f5efd9" stroke-width="3"/><text x="${x}" y="${y+5}" fill="#355443" opacity=".35" text-anchor="middle" font-size="24">${icons[types[n++]]}</text>`;}});return `<svg class="illustration" viewBox="20 0 360 250" aria-label="An island of nineteen colorful terrain hexes"><ellipse cx="200" cy="130" rx="164" ry="100" fill="#e1e9df"/>${shapes}<path d="M175 108l22 13" stroke="#d05d51" stroke-width="7" stroke-linecap="round"/><path d="M171 96l9-8 9 8v13h-18z" fill="#d05d51" stroke="#6b5140" stroke-width="2"/><path d="M273 139l-23 13" stroke="#4b83b6" stroke-width="7" stroke-linecap="round"/><path d="M268 129l9-8 9 8v13h-18z" fill="#4b83b6" stroke="#39535e" stroke-width="2"/></svg>`;}
