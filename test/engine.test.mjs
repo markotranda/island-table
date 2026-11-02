@@ -37,6 +37,9 @@ test('seven requires exact discards before moving robber and hides stolen identi
 test('domestic trades reject gifts and same resources, exchange atomically, and clear offers',()=>{
   let g=clear(fixture());give(g,0,'wood',2);give(g,1,'ore',1);assert.throws(()=>action(g,0,{type:'offer',give:{wood:1},want:{}}),/gifts/);assert.throws(()=>action(g,0,{type:'offer',give:{wood:2},want:{wood:1}}),/different/);
   g=action(g,0,{type:'offer',offerId:'trade001',give:{wood:2},want:{ore:1}});g=action(g,1,{type:'acceptOffer',offerId:'trade001'});assert.equal(g.players[1].hand.wood,2);assert.equal(g.players[0].hand.ore,1);assert.equal(g.offers.length,0);conserved(g);
+  give(g,1,'ore',1);give(g,2,'wool',1);g=action(g,1,{type:'offer',offerId:'trade002',give:{ore:1},want:{wood:1}});g=action(g,2,{type:'offer',offerId:'trade003',give:{wool:1},want:{wood:1}});
+  g=action(g,0,{type:'cancelOffer',offerId:'trade003'});assert.deepEqual(g.offers.map(o=>o.id),['trade002'],'cancelling one offer keeps the others');
+  assert.throws(()=>action(g,2,{type:'cancelOffer',offerId:'trade002'}),/cannot cancel/);
 });
 test('bank rates follow owned ports and bank shortage rolls back payment',()=>{
   let g=clear(fixture());const port=g.board.ports.find(p=>p.resource==='wood');g.board.vertices[port.vertices[0]].building={owner:0,kind:'settlement'};assert.equal(tradeRatio(g,0,'wood'),2);give(g,0,'wood',4);g=action(g,0,{type:'bank',give:'wood',want:'ore'});assert.equal(g.players[0].hand.ore,1);conserved(g);g.bank.ore=0;const before=structuredClone(g);assert.throws(()=>action(g,0,{type:'bank',give:'wood',want:'ore'}),/supply/);assert.deepEqual(g,before);

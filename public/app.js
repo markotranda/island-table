@@ -24,13 +24,15 @@ async function connect(){
   }
 }
 async function enter(s){session=s;room=s.room;remember();state=await request(`/api/rooms/${room}`);render();connect();}
+// Commands whose meaning survives other players' concurrent changes, keyed by the context they depend on.
+// Friends ready up and post offers at the same moment; while that context is unchanged a stale revision is retried instead of asking them to redo it.
+function retryContext(type){if(type==='ready'&&state.phase==='lobby')return `ready:${state.players[state.me]?.ready}`;if(type==='offer'&&state.phase==='action')return `offer:${state.turn}:${state.active}:${state.role}`;return null;}
 async function command(type,extra={},retries=5){
-  if(busy)return;busy=true;const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},wasReady=state.players[state.me]?.ready;
+  if(busy)return;busy=true;const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},context=retryContext(type);
   try{let next;try{next=await request(`/api/rooms/${session.room}/commands`,payload);}catch(e){if(e instanceof TypeError)next=await request(`/api/rooms/${session.room}/commands`,payload);else throw e;}mode='';if(next.revision>=state.revision)state=next;render();}
   catch(e){
-    if(e.status===409){state=await request(`/api/rooms/${session.room}`);render();
-      // Friends often ready up at the same moment; readiness does not depend on what changed, so retry instead of asking them to click again.
-      if(retries>0&&type==='ready'&&state.phase==='lobby'&&state.players[state.me]?.ready===wasReady){busy=false;return command(type,extra,retries-1);}}
+    if(e.status===409){state=await request(`/api/rooms/${session.room}`);
+      if(retries>0&&context!==null&&retryContext(type)===context){busy=false;return command(type,extra,retries-1);}render(true);}
     toast(e.message);}
   finally{busy=false;}
 }
