@@ -272,6 +272,9 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.equal(await waitActive(pages,B),C);const roads=await C.eval(`document.querySelectorAll('.road').length`);
     await clickCard(C,'Road Building');
     for(const n of [1,2]){await C.click('[data-edge]');await C.waitFor(`document.querySelectorAll('.road').length===${roads+n}`);}
+    // Everyone else sees the new roads pulse in C's colour; C, who placed them, does not.
+    await A.waitFor(`document.querySelectorAll('[data-placed="edge"]').length===2`,{message:'New roads were not highlighted for other players'});
+    assert.equal(await C.eval(`document.querySelectorAll('[data-placed]').length`),0);
     await C.waitFor(`document.querySelector('[data-command="roll"]')`,{message:'Road Building did not return to the roll'});
     await playTurn(pages,C);
 

@@ -345,3 +345,9 @@
 .dev-cards .dev-card b{position:absolute;top:-8px;right:-8px;min-width:21px;height:21px;border-radius:11px;background:#203a3f;color:#fff;font-size:11px;display:grid;place-items:center;padding:0 5px;border:2px solid #fffaf0}
 .dev-cards .dev-card:has(b){box-shadow:3px 3px 0 -1px #2f4d48,3px 3px 0 0 #1c3330}.dev-cards .dev-card.vp:has(b){box-shadow:3px 3px 0 -1px #7a5a2a,3px 3px 0 0 #4f3916}
 .dev-cards .dev-card:not(:disabled):has(b){box-shadow:0 0 0 2px #f2c94c,3px 3px 0 1px #2f4d48,0 6px 12px #2a1c1050}
+/* Another player's new piece: a ring in their colour pulses three times, then fades. */
+.placed{fill:none;stroke:var(--c);stroke-width:4.5;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff8);pointer-events:none;opacity:0;transform-box:fill-box;transform-origin:center;animation:placed 1s ease-out 3 both;animation-delay:var(--t)}
+.placed-road{stroke:#fff6c8;stroke-width:15;stroke-linecap:round;filter:drop-shadow(0 0 3px var(--c)) drop-shadow(0 0 6px var(--c));animation-name:placed-road}
+@keyframes placed{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes placed-road{0%{opacity:.9}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.placed{animation:placed-still 3s linear both;animation-delay:var(--t)}@keyframes placed-still{0%,90%{opacity:.8}100%{opacity:0}}}

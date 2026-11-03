@@ -98,8 +98,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 3. Build cards | done | see log | |
 | 4. Stacked dev cards | done | see log | |
 | 5. Setup flights | done | see log | |
-| 6. Placement highlight | next | | |
-| 7. Tooltips | | | |
+| 6. Placement highlight | done | see log | |
+| 7. Tooltips | next | | |
 | 8. Checks | | | |
 
 ## Round 2 log
@@ -129,3 +129,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Engine: `sources(g,p,v)` lists `{p,hex,r,n:1}` for the non-desert hexes around a vertex. Fixed setup's `gain` event and variable setup's second-settlement `build` event carry `gains` (same shape as a roll's).
   - Client: `board()` glows hexes for any live effect with `gains` (non-roll ones for 1.8 s, with `--t` shifted 800 ms past the roll tumble); `playEffects()` flies `gains` for every event kind, starting at 150 ms instead of 800 for non-rolls.
   - Tests: engine test that every starting grant's `gains` match its resources and hex terrain (fixed and variable); first browser test hears `pop` on every page after setup (fails when flights are limited to rolls).
+
+- 2026-11-03, step 6:
+  - `board()`: for live `build`/`robber` effects by another player (`f.p!==state.me`, not neutral, < 3 s) draws `.placed` with `data-placed="edge|vertex|hex"` and `--c` = player colour, `--t` = elapsed. Road glows (`.placed-road`, pale line with a coloured drop-shadow) go before the roads so the road stays on top; rings for settlements/cities and the robber hex go last. CSS: three 1 s pulses; reduced motion shows a steady ring that fades at 3 s.
+  - Browser test: after C's two free roads, A sees two `[data-placed="edge"]`, C sees none.
+  - Checked by eye with a scratch script (`pulse.mjs` in the session scratchpad, not committed): rings and road glows are visible against all terrains.
