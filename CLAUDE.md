@@ -42,7 +42,7 @@ Code is written in a compact, dense style: long single-line functions, minimal w
 - `RULES.md` is the rule-to-source mapping and the list of **explicit digital conventions** for underspecified cases (Longest Route traversal, Road Building with < 2 legal spots, two-desert robber start, dev-card aging per personal action opportunity in paired turns, neutral blockers in fixed 5-player setup, etc.). Update it when changing any such behavior. The saved rules identifier is `2025-v1`.
 - Rule source of truth is the 2025 rulebooks; text extracts live in `tmp/pdfs/*.pdf.txt`. Do not bundle the PDFs or their artwork in the app.
 - No older-edition rules: no special building phase; Player 2 in paired turns never trades with players and never rolls.
-- Never invent moves for disconnected players (no auto-skips, bots, or timers).
+- Moves are made only by players, by bot seats the host added, and by a bot standing in for an offline player (handed over by someone at the table, or after 60 s offline while the game waits on them and another human is connected; released the moment they return). No auto-skips or forfeits. Bots decide only from `view()` of their own seat.
 - Schema is additive and auto-created at startup; incompatible changes need an explicit migration.
 - `PLAN.md` is the original proposal; its React/TypeScript/Socket.IO stack was deliberately not used.
 - Work in progress: `progress.md` (status and handoff) and `docs/feedback-plan.md` (the agreed plan and working rules). Read them before continuing that work.

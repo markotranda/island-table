@@ -186,3 +186,25 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Owner should report with a screenshot if the steal tooltip still shows other players' resources.
 
 - 2026-11-03, step 5 (checks): `npm test` and `THROTTLE=6 npm test` both 37/37. Review screenshots regenerated (new `15-starting-roll`; `02-lobby` shows the settings, `08-discard` the window). `CLAUDE.md` updated (commands, `order` phase, settings, new hooks, tooltip rule). Section 11 appended to `docs/project-log.md` (still untracked). Not checked: the steal tooltip in the owner's own browser, phone layout of the order card and discard window by eye.
+
+# Round 4: bots
+
+Plan: [`docs/bots-plan.md`](docs/bots-plan.md) (reviewed by a second agent over three rounds, approved). Same working rules as round 1.
+
+| Step | State | Commit | Notes |
+|---|---|---|---|
+| 1. Plan and rule docs | done | see log | Usage at start: 5-hour 19%, weekly 32%, context 19% |
+| 2. Engine | done | see log | |
+| 3. Bot brain | done | see log | |
+| 4. Server runner | next | | |
+| 5. Client | | | |
+| 6. Checks | | | |
+
+## Round 4 log
+
+- 2026-11-03, steps 1–3:
+  - Review found (and fixed before code): rematch must keep bots; the runner must ask every pending bot seat (the active bot waits on its offer while others answer); bot offers need an `offerId` from the runner; per-turn limits must come from `v.events` since `decide` is pure; release must work after the game finished; automatic takeover only while another human is connected and only when the game waits on that player; an `auto` seat is released by any command from it.
+  - Engine: `addPlayer(g,id,name,bot)`, `BOT_NAMES`, `addBot`/`removeBot` (host, lobby; colours re-packed by index), `takeover {player}` (`auto:true` from the server = automatic, self, `by:null`), `release` (above the finished check), winning clears `auto`, settings keep bots ready, `pending(g)`, `bot`/`auto` in `view()`. Human names ending in "(Bot)" are rejected.
+  - `lib/bot.mjs`: `decide(v,random,ctx)` and `fallback(v)`. `test/sim.mjs`: seeded `rng`, `scripted` (the old matches-test player, now shared), `bot`, `play()` with a simulated clock, `setHand`. `matches.test.mjs` uses it.
+  - Strength (`node scripts/bot-stats.mjs`): all-bot 4-player games median ~65 turns (~16 rounds), 5–6 players ~130 turns (paired turns count twice); 2 bots vs 2 scripted players win ~80–100%. The scripted player is weak, so this shows sense, not strength; the browser play-test in step 6 is the real check.
+  - Bots post a 1-for-1 offer on about half their turns when one or two cards short; they rarely trade with each other (both must gain).
