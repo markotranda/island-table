@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newGame,addPlayer,apply,view,legalRoads,legalSettlements,routeLength,produce,score,tradeRatio,R,emptyHand,upgrade} from '../lib/engine.mjs';
+import {newGame,addPlayer,apply,view,legalRoads,legalSettlements,routeLength,routePath,produce,score,tradeRatio,R,emptyHand,upgrade} from '../lib/engine.mjs';
 import {makeBoard} from '../lib/board.mjs';
 function rng(seed=8){return n=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed%n;};}
 function fixture(n=4,setup='fixed',map=n>4?'extended':'base'){let g=newGame('test',map,setup);for(let i=0;i<n;i++){addPlayer(g,`id${i}`,`Player ${i}`);g.players[i].ready=true;}return apply(g,0,{type:'start'},rng());}
@@ -83,6 +83,11 @@ test('development cards enforce purchase timing and one per turn; VP cannot be p
 test('Invention honors the supply and restores pre-roll phase',()=>{let g=clear(fixture());g.phase='preRoll';g.players[0].cards=[{id:'a',type:'invention',bought:0}];g=action(g,0,{type:'playCard',card:'a'});g=action(g,0,{type:'invention',resources:{wood:1,wheat:1}});assert.equal(g.phase,'preRoll');assert.equal(g.players[0].hand.wheat,1);conserved(g);});
 test('free roads enforce connection and stop when all pieces are used',()=>{let g=fixture();const p=g.active;g.phase='action';g.players[p].cards=[{id:'a',type:'roads',bought:0}];g=action(g,p,{type:'playCard',card:'a'});const hand=structuredClone(g.players[p].hand);g=action(g,p,{type:'road',edge:legalRoads(g,p)[0]});g=action(g,p,{type:'road',edge:legalRoads(g,p)[0]});assert.equal(g.phase,'action');assert.deepEqual(g.players[p].hand,hand);assert.equal(g.board.edges.filter(e=>e.owner===p).length,4);});
 test('longest route counts edges once through loops and stops at opposing settlements',()=>{const g=clear(fixture()),h=g.board.hexes[9];h.edges.forEach(e=>g.board.edges[e].owner=0);assert.equal(routeLength(g,0),6);g.board.vertices[h.vertices[0]].building={owner:1,kind:'settlement'};assert.equal(routeLength(g,0),6);g.board.vertices[h.vertices[3]].building={owner:1,kind:'settlement'};assert.equal(routeLength(g,0),3);});
+test('the longest route path is one continuous trail of the owner’s roads and is in every view',()=>{const g=clear(fixture()),h=g.board.hexes[9];h.edges.forEach(e=>g.board.edges[e].owner=0);
+  const spur=g.board.vertices[h.vertices[0]].edges.find(e=>!h.edges.includes(e));g.board.edges[spur].owner=0;g.board.vertices[h.vertices[3]].building={owner:1,kind:'settlement'};
+  const path=routePath(g,0);assert.equal(path.length,routeLength(g,0));assert.equal(new Set(path).size,path.length);assert.ok(path.every(e=>g.board.edges[e].owner===0));
+  for(let i=1;i<path.length;i++){const [a,b]=[path[i-1],path[i]].map(e=>g.board.edges[e].vertices);assert.ok(a.some(v=>b.includes(v)),'consecutive edges share a vertex');}
+  assert.deepEqual(view(g,2).players[0].routeEdges,path);});
 test('branches do not sum all arms into a continuous route',()=>{const g=clear(fixture()),v=g.board.vertices.find(v=>v.edges.length===3);v.edges.forEach(e=>g.board.edges[e].owner=0);assert.equal(routeLength(g,0),2);});
 test('private views exclude opponents hands, deck and hidden victory points',()=>{const g=fixture();g.players[1].cards.push({id:'secret',type:'vp',bought:0});const v=view(g,0);assert.equal(v.players[1].cards,undefined);assert.equal(v.players[1].hand,undefined);assert.equal(v.deck,undefined);assert.equal(v.players[1].score,2);assert.equal(view(g,1).players[1].score,3);assert.equal(JSON.stringify(v).includes('secret'),false);});
 test('winning is immediate only during your own portion, including a newly bought VP',()=>{let g=clear(fixture(6));g.players[0].cards=Array.from({length:9},(_,i)=>({id:`v${i}`,type:'vp',bought:0}));g.deck=['vp'];give(g,0,'ore',1);give(g,0,'wool',1);give(g,0,'wheat',1);g=action(g,0,{type:'buyCard'});assert.equal(g.phase,'finished');assert.equal(g.winner,0);assert.equal(score(g,0,true),10);assert.equal(g.active,0);});

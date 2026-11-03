@@ -47,6 +47,8 @@ export async function launch(){
         const box=await page.waitFor(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)return null;e.scrollIntoView({block:'center',inline:'center'});const r=e.getBoundingClientRect();return r.width||r.height?{x:r.x+r.width/2,y:r.y+r.height/2}:null;})()`,{message:`No clickable ${selector}`});
         for(const type of ['mousePressed','mouseReleased'])await cmd('Input.dispatchMouseEvent',{type,x:box.x,y:box.y,button:'left',clickCount:1});
       },
+      // Moves the mouse to the element's centre (for tooltips and hover highlights).
+      async hover(selector){const box=await page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);if(!box)throw new Error(`No ${selector} to hover`);await cmd('Input.dispatchMouseEvent',{type:'mouseMoved',x:box.x,y:box.y});},
       async type(selector,text){await page.waitFor(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return false;e.focus();e.select?.();return true;})()`);await cmd('Input.insertText',{text});},
       select:(selector,value)=>page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));return e.value;})()`),
       // PNG of the current viewport, for debugging failures and design reviews.

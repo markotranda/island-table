@@ -200,7 +200,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     for(const page of [A,B,C])await heard(page,'robber');await heard(B,'sour');await heard(C,'steal');assert.ok(!(await sounds(C)).includes('sour'),'only the victim hears the sour note');
     await A.waitFor(`document.querySelector('[data-command="end"]')`);assert.ok(!await A.has('[data-victim]'),'no pick for a single victim');
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('stole a resource from Seat ${b}')`);
-    await B.waitFor(`document.querySelector('.log-list .log-res[title="1 ore"]')`,{message:'The victim’s history does not name the stolen ore'});
+    await B.waitFor(`document.querySelector('.log-list .log-res[data-tip="1 ore"]')`,{message:'The victim’s history does not name the stolen ore'});
 
     await stage(server,pages,(g,{setHand,deal,topDeck})=>{assert.equal(g.phase,'action');
       setHand(a,{wood:5,wool:1,wheat:2,ore:2});setHand(b,{brick:2,wool:2});setHand(c,{wool:3,ore:1});
@@ -210,7 +210,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.equal(await scoreOf(C,c),await scoreOf(A,c)+1,'a hidden Victory Point counts only on its owner’s screen');
     assert.ok(await C.eval(`${cardButton('Victory Point')}.disabled`),'Victory Point cards cannot be played');
     assert.deepEqual(await C.eval(`[...document.querySelectorAll('[data-card][data-type="knight"]')].map(b=>b.querySelector('b')?.textContent)`),['2'],'two Knights stack into one card with a count');
-    assert.match(await C.eval(`${cardButton('Knight')}.title`),/steal 1 resource/,'cards say what they do');
+    assert.match(await C.eval(`${cardButton('Knight')}.dataset.tip`),/steal 1 resource/,'cards say what they do');
 
     // Only the current player starts trades. B accepts while C counters at the same moment: both reach A live,
     // A declines the counter and then chooses B among the players who accepted.
@@ -222,7 +222,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     // Cost cards show what you hold and what you miss, on and off your turn.
     const marks=page=>page.eval(`[...document.querySelectorAll('[data-ui="build-bar"] [data-mode="road"] .cost')].map(e=>e.dataset.res+':'+e.className.split(' ')[1])`);
     assert.deepEqual(await marks(A),['wood:have','brick:miss']);assert.deepEqual(await marks(B),['wood:miss','brick:have']);
-    assert.match(await A.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').title`),/missing 1 brick/);
+    assert.match(await A.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').dataset.tip`),/missing 1 brick/);
     await listen([A,B,C]);await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
     for(const page of [B,C])await page.waitFor(`document.querySelector('[data-ui="trade-panel"] .offer [data-counter]')`,{message:'The offer did not open the trade panel for the other players'});
     // Closing the panel hides the offer behind a launcher badge until it is reopened.
@@ -275,6 +275,13 @@ test('browser: discards, player and bank trades, and every development card',{sk
     // Everyone else sees the new roads pulse in C's colour; C, who placed them, does not.
     await A.waitFor(`document.querySelectorAll('[data-placed="edge"]').length===2`,{message:'New roads were not highlighted for other players'});
     assert.equal(await C.eval(`document.querySelectorAll('[data-placed]').length`),0);
+    // Hovering one of C's roads explains it and lights up C's longest route; hovering a card says what it does.
+    await A.hover(`.road[data-owner="${c}"]`);
+    const tip=await A.waitFor(`document.querySelector('#tip.visible')?.textContent`,{message:'No tooltip on a road'});
+    const route=Number(tip.match(/Longest route: (\d+)/)?.[1]);assert.ok(route>=3,tip);
+    assert.equal(await A.eval(`document.querySelectorAll('.board.route-mode .road.route-lit').length`),route,'the lit roads are the longest route');
+    await A.hover('[data-command="buyCard"]');await A.waitFor(`document.querySelector('#tip.visible')?.textContent.includes('Dev card')`,{message:'Moving to another element did not move the tooltip'});
+    assert.equal(await A.eval(`document.querySelectorAll('.route-lit').length`),0,'leaving the road clears the highlight');
     await C.waitFor(`document.querySelector('[data-command="roll"]')`,{message:'Road Building did not return to the roll'});
     await playTurn(pages,C);
 
@@ -283,7 +290,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await A.click('[data-hex]');await A.waitFor(`!document.querySelector('[data-hex]')`);
     if(await A.has('[data-victim]'))await A.click('[data-victim]');
     await A.waitFor(`document.querySelector('[data-command="roll"]')`,{message:'Knight did not return to the roll'});
-    assert.equal(await A.eval(`document.querySelectorAll('.sidebar .player')[${a}].querySelector('.stat[title$="knights played"]').textContent`),'1');
+    assert.equal(await A.eval(`document.querySelectorAll('.sidebar .player')[${a}].querySelector('.stat[data-tip$="knights played"]').textContent`),'1');
     for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });

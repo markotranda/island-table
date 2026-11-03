@@ -56,6 +56,10 @@ try{
   const me=pages[viewer];
   // Awards are recalculated when a turn begins; end the active turn and back again is overkill, so screenshot the busy board as is.
   await shot(me,'04-midgame-board');
+  // Tooltips: a road (with its owner's longest route lit) and a development card.
+  await me.hover('.road[data-owner="1"]');await me.waitFor(`document.querySelector('#tip.visible')`);await shot(me,'13-road-tip');
+  await me.hover('[data-type="knight"]');await me.waitFor(`document.querySelector('#tip.visible')?.textContent.includes('Knight')`);await shot(me,'14-card-tip');
+  await me.hover('.topbar');await pause(200);
   // The active player posts an offer; one player accepts and another counters, then the active player opens the trade panel.
   const post=(page,values,counter)=>page.eval(`(async()=>{document.querySelector(${JSON.stringify(counter?'.offer [data-counter]':'[data-mode="trade"]')}).click();const f=document.getElementById('trade');for(const [k,v] of Object.entries(${JSON.stringify(values)})){const e=f.elements.namedItem(k);e.value=String(v);e.dispatchEvent(new Event('change',{bubbles:true}));}f.requestSubmit();})()`);
   await post(me,{'give-wool':1,'want-brick':1});const accepter=pages[(viewer+1)%4],counterer=pages[(viewer+3)%4];

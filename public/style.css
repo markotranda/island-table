@@ -351,3 +351,10 @@
 @keyframes placed{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.5)}}
 @keyframes placed-road{0%{opacity:.9}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.placed{animation:placed-still 3s linear both;animation-delay:var(--t)}@keyframes placed-still{0%,90%{opacity:.8}100%{opacity:0}}}
+/* Tooltips: one floating label, dark wood with cream text. */
+#tip{position:fixed;left:0;top:0;z-index:60;max-width:260px;padding:7px 10px;border-radius:8px;background:#2a2119f2;color:#fbefd6;font-size:12px;line-height:1.4;box-shadow:0 6px 16px #0006;pointer-events:none;opacity:0;transition:opacity .12s;white-space:pre-line}
+#tip.visible{opacity:1}
+.log-card{text-decoration:underline dotted #8a6a3a;text-underline-offset:2px;cursor:help;font-style:normal}
+/* Longest route: hovering a road dims every other road and lights the owner's longest route. */
+.board.route-mode .road{opacity:.35;transition:opacity .15s}.board.route-mode .road.route-lit{opacity:1;filter:drop-shadow(0 0 3px #fff6c8) drop-shadow(0 0 6px #fff6c8)}
+.dev-cards .dev-card:hover:not(:disabled){background:#38605a linear-gradient(#ffffff17,#0000)}.dev-cards .dev-card.vp:hover:not(:disabled){background:#8a6a36 linear-gradient(#ffffff17,#0000)}

@@ -99,8 +99,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 4. Stacked dev cards | done | see log | |
 | 5. Setup flights | done | see log | |
 | 6. Placement highlight | done | see log | |
-| 7. Tooltips | next | | |
-| 8. Checks | | | |
+| 7. Tooltips | done | see log | |
+| 8. Checks | next | | |
 
 ## Round 2 log
 
@@ -134,3 +134,12 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - `board()`: for live `build`/`robber` effects by another player (`f.p!==state.me`, not neutral, < 3 s) draws `.placed` with `data-placed="edge|vertex|hex"` and `--c` = player colour, `--t` = elapsed. Road glows (`.placed-road`, pale line with a coloured drop-shadow) go before the roads so the road stays on top; rings for settlements/cities and the robber hex go last. CSS: three 1 s pulses; reduced motion shows a steady ring that fades at 3 s.
   - Browser test: after C's two free roads, A sees two `[data-placed="edge"]`, C sees none.
   - Checked by eye with a scratch script (`pulse.mjs` in the session scratchpad, not committed): rings and road glows are visible against all terrains.
+
+- 2026-11-03, step 7:
+  - Engine: `routePath(g,p)` returns the edges of one longest route (`routeLength` is its length); `view()` adds `routeEdges` next to `route` for every player.
+  - Client: every `title="…"` attribute became `data-tip="…"`. One `#tip` layer (outside `#app`): 350 ms hover delay, instant when moving between tips, long press (450 ms) on touch that swallows the following click, hidden on scroll and pointerdown. `retip()` at the end of `render()` re-attaches the tip and route highlight to whatever is under the pointer after a redraw.
+  - New tips: hexes (resource, number, odds out of 36, robber), ports (rate, whether you use it), settlements/cities (owner, what they produce on which numbers), roads (owner, longest route length, whether this road is on it; hover lights the route via `.board.route-mode .road.route-lit`), award tiles (holder and what takes it), resource cards (your supply rate), dice (who rolled), dev cards and "played X" in the history (`DEV_HELP`), invite and help buttons. Hex `<title>` removed.
+  - Fixed on the way: dev cards turned grey on hover (generic `button:hover` background).
+  - Tests: engine test that `routePath` is a continuous trail of the owner's roads and appears in other players' views; browser test hovers C's road (tip, lit count = route length), then the dev card button (tip moves, highlight clears). Driver gained `page.hover()`. Review script adds `13-road-tip` and `14-card-tip`.
+  - Gotcha: the scratchpad edit helper read stdin as cp1252 and garbled `’` once (fixed in `app.js` and an engine test name). If you script edits on this machine, read stdin as UTF-8.
+  - Not done from the step 7 list: a tip on the sidebar player card as a whole (its stats already have tips) and on the robber pawn.
