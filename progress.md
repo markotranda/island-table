@@ -15,8 +15,8 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 4. Dice | done | 3e524c8 | Usage after: 5-hour 42%, weekly 21%, context 29% |
 | 5. Resource animations | done | d581ba4 | Usage after: 5-hour 46%, weekly 22%, context 30% |
 | 6. Win screen and sound | done | bf3c105 | Usage after: 5-hour 50%, weekly 22%, context 32% |
-| 7. Icons | waiting for the owner's OK | | Proposed source: `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/<name>.svg`, ~12 files of ~1 KB: arrow-right, arrow-right-arrow-left, arrow-up-right-from-square, xmark, check, volume-high, volume-xmark, house, dice, trophy, handshake, building-columns |
-| 8. Checks | done for steps 1–6 | (next commit) | Rerun after step 7 |
+| 7. Icons | done | (next commit) | 12 Font Awesome Free 6.7.2 icons downloaded from jsDelivr with the owner's OK |
+| 8. Checks | done | (next commit) | `npm test` and `THROTTLE=6 npm test` 33/33 after step 7 |
 
 ## Log
 
@@ -64,6 +64,13 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Not verified by ear in this session: sound output (headless tests can't hear). Worth a manual listen.
 
 - 2026-11-03, step 8 (for steps 1–6): `npm test` and `THROTTLE=6 npm test` both 33/33. Review screenshots regenerated and sent to the owner. Section 10 appended to `docs/project-log.md` (that file was untracked before this work and is left uncommitted). Not checked: a 1280×720 laptop viewport, the extended 30-hex board screenshot, and sound by ear.
+
+- 2026-11-03, step 7 (owner approved the download):
+  - Path data of arrow-right, arrow-right-arrow-left, arrow-up-right-from-square, xmark, check, volume-high, volume-xmark, house, dice, trophy, handshake, building-columns copied into `UI` in `scripts/icons.mjs` (keys `arrow, swap, external, close, check, sound-on, sound-off, house, dice, trophy, handshake, bank`); `sprite()` emits `#ui-<key>` symbols with `fill="currentColor"`; regenerated with `node scripts/icons.mjs`.
+  - `ui(k,label)` helper in `app.js`; text arrows/checks/×/⌂ replaced (invite, home, create, resume, footer, ready badges, set sail, end turn, play again, close buttons, accepted badge), `SPEAKER` uses the sound icons, trade tabs get handshake/bank, roll pill gets dice, victory banner gets the trophy. `.ui-ico` CSS sizes icons to 1em.
+  - Tests that matched on "ready ✓" now match on words / `.lobby-seat.is-ready`.
+  - CC BY 4.0 credit: README "Credits" section and a "Credits" entry in How to play. `CLAUDE.md` notes the `#ui-*` symbols.
+  - All plan steps are now done. Remaining unchecked: sound by ear, a 1280×720 viewport, an extended-board screenshot.
 
 ## Handoff prompt
 

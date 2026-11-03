@@ -271,7 +271,7 @@ test('browser: Largest Army wins on your own turn, reveals hidden points, and th
     for(const page of pages)assert.ok(await page.has('[data-ui="victory"] .victory-card'),'the win banner covers every screen');
     await other.click('[data-ui="victory-close"]');await other.waitFor(`!document.querySelector('[data-ui="victory"]')&&document.querySelector('.control-sidebar .winner')`,{message:'Closing the banner did not reveal the board and the winner card'});
     await pages[0].click('[data-command="rematch"]');
-    for(const page of pages)await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('ready ✓')`,{message:'Rematch did not return everyone to the lobby'});
+    for(const page of pages)await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('I’m ready')`,{message:'Rematch did not return everyone to the lobby'});
     assert.match(await pages[2].text(),/Seat 0[\s\S]*Seat 1[\s\S]*Seat 2/);
     for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}

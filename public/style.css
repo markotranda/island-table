@@ -319,3 +319,11 @@ body{background:#a6754a radial-gradient(ellipse at 50% 30%,#bb8a5c 0%,#a6754a 55
 .topbar .sound{display:inline-grid;place-items:center;padding:7px 9px}
 @media(prefers-reduced-motion:reduce){.victory,.victory-card,.trophy,.confetti i{animation:none}.confetti{display:none}}
 @media(max-width:620px){.victory-card{padding:20px 16px}.victory-card h1{font-size:38px}}
+/* Interface icons from the sprite: sized to the text and coloured by it. */
+.ui-ico{display:inline-block;width:1em;height:1em;vertical-align:-.13em;flex:none;fill:currentColor}
+.topbar .ui-ico{width:.95em;height:.95em}
+.tab .ui-ico{margin-right:2px;opacity:.85}
+.trade-close .ui-ico{width:.8em;height:.8em}
+.trophy{display:block;width:64px;height:64px;margin:0 auto 6px;color:#e0a92e}
+.trophy .ui-ico{width:64px;height:64px;filter:drop-shadow(0 2px 0 #8a6a3a) drop-shadow(0 6px 8px #b48a3e88)}
+.roll-hint .ui-ico{margin-right:3px}

@@ -120,3 +120,7 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 The implementation uses JavaScript ES modules and browser-native SVG/DOM rather than the originally proposed React/TypeScript/Socket.IO toolchain. Node's built-in HTTP, crypto, SQLite, and test libraries keep the application dependency-free. Every game command has an ID and expected revision; commands are serialized and persisted atomically before acknowledgement. A duplicate retry cannot spend resources twice. Reconnects receive a complete filtered snapshot.
 
 Intended for a few concurrent private games on one server. No public matchmaking, spectators, AI opponents, game timers, or additional expansions are included.
+
+## Credits
+
+Interface icons (arrows, close, check, sound, home, dice, trophy, handshake, bank) are from [Font Awesome Free 6.7.2](https://fontawesome.com) by Fonticons, Inc., licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Their path data is copied into `scripts/icons.mjs` and inlined in the sprite in `public/index.html`; no font or script is loaded from Font Awesome. All other artwork is original.

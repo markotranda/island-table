@@ -25,7 +25,7 @@ try{
   await host.type('#nickname',names[0]);await host.select('#map','base');await host.select('#setup','variable');await host.click('#entry button.primary');await host.waitFor(`document.querySelector('[data-command="ready"]')`);
   const room=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);
   for(let i=1;i<3;i++){await pages[i].goto(`${base}/?room=${room}`);await pages[i].waitFor(`document.querySelector('#code')?.value.length===12`);await pages[i].type('#nickname',names[i]);await pages[i].click('#entry button.primary');await pages[i].waitFor(`document.querySelector('[data-command="ready"]')`);}
-  await pages[1].click('[data-command="ready"]');await host.waitFor(`document.body.textContent.includes('Ready ✓')`);await shot(host,'02-lobby');
+  await pages[1].click('[data-command="ready"]');await host.waitFor(`document.querySelector('.lobby-seat.is-ready')`);await shot(host,'02-lobby');
   const jun=pages[3];await jun.goto(`${base}/?room=${room}`);await jun.waitFor(`document.querySelector('#code')?.value.length===12`);await jun.type('#nickname',names[3]);await jun.click('#entry button.primary');await jun.waitFor(`document.querySelector('[data-command="ready"]')`);
   for(const p of [host,pages[2],jun]){await p.click('[data-command="ready"]');await p.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
   await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await host.click('[data-command="start"]');for(const p of pages)await p.waitFor(`document.querySelector('svg.board')`);
