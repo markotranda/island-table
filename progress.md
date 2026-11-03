@@ -14,9 +14,9 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 3. Trade panel | done | 24a38f2 | Usage after: 5-hour 40%, weekly 21%, context 27% |
 | 4. Dice | done | 3e524c8 | Usage after: 5-hour 42%, weekly 21%, context 29% |
 | 5. Resource animations | done | d581ba4 | Usage after: 5-hour 46%, weekly 22%, context 30% |
-| 6. Win screen and sound | done | (next commit) | |
-| 7. Icons | next (ask owner first) | | Needs the owner's OK before downloading SVGs |
-| 8. Checks | pending | | |
+| 6. Win screen and sound | done | bf3c105 | Usage after: 5-hour 50%, weekly 22%, context 32% |
+| 7. Icons | waiting for the owner's OK | | Proposed source: `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/<name>.svg`, ~12 files of ~1 KB: arrow-right, arrow-right-arrow-left, arrow-up-right-from-square, xmark, check, volume-high, volume-xmark, house, dice, trophy, handshake, building-columns |
+| 8. Checks | done for steps 1–6 | (next commit) | Rerun after step 7 |
 
 ## Log
 
@@ -62,6 +62,8 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Sound: Web Audio, unlocked on the first `pointerdown`; `fanfare()` on a new `win` event, `rattle()` on every new `roll` event (both via `playEffects()`, which still plays sounds under reduced motion but skips flights). Mute button in the header (`data-ui="mute"`, inline speaker SVG), stored in `localStorage` key `island-muted`.
   - Win browser test: banner on every screen; closing it reveals the board and the winner card; rematch from the banner.
   - Not verified by ear in this session: sound output (headless tests can't hear). Worth a manual listen.
+
+- 2026-11-03, step 8 (for steps 1–6): `npm test` and `THROTTLE=6 npm test` both 33/33. Review screenshots regenerated and sent to the owner. Section 10 appended to `docs/project-log.md` (that file was untracked before this work and is left uncommitted). Not checked: a 1280×720 laptop viewport, the extended 30-hex board screenshot, and sound by ear.
 
 ## Handoff prompt
 
