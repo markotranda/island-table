@@ -157,7 +157,7 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 2. Starting roll | done | see log | |
 | 3. Discard warning and window | done | see log | |
 | 4. Client fixes | done | see log | |
-| 5. Checks | in progress | | |
+| 5. Checks | done | see log | `npm test` and `THROTTLE=6 npm test` 37/37 |
 
 ## Round 3 log
 
@@ -184,3 +184,5 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Flake found: "discards, player and bank trades" counted all `[data-placed]` on C after Road Building, which includes B's robber pulse when B had just rolled a 7 (actual 1). Now counts only `[data-placed="edge"]`.
   - Tests: still-pointer `pointerover` shows no tip; building tip wording; hovering a building shows its tip; history has no sideways scroll and keeps its scroll through a redraw; the open trade panel has no running animation after live answers.
   - Owner should report with a screenshot if the steal tooltip still shows other players' resources.
+
+- 2026-11-03, step 5 (checks): `npm test` and `THROTTLE=6 npm test` both 37/37. Review screenshots regenerated (new `15-starting-roll`; `02-lobby` shows the settings, `08-discard` the window). `CLAUDE.md` updated (commands, `order` phase, settings, new hooks, tooltip rule). Section 11 appended to `docs/project-log.md` (still untracked). Not checked: the steal tooltip in the owner's own browser, phone layout of the order card and discard window by eye.
