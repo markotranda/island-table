@@ -196,9 +196,9 @@ Plan: [`docs/bots-plan.md`](docs/bots-plan.md) (reviewed by a second agent over 
 | 1. Plan and rule docs | done | see log | Usage at start: 5-hour 19%, weekly 32%, context 19% |
 | 2. Engine | done | see log | |
 | 3. Bot brain | done | see log | |
-| 4. Server runner | next | | |
-| 5. Client | | | |
-| 6. Checks | | | |
+| 4. Server runner | done | 866d4ee | |
+| 5. Client | done | see log | |
+| 6. Checks | done | see log | `npm test` and `THROTTLE=6 npm test` 47/47 |
 
 ## Round 4 log
 
@@ -208,3 +208,7 @@ Plan: [`docs/bots-plan.md`](docs/bots-plan.md) (reviewed by a second agent over 
   - `lib/bot.mjs`: `decide(v,random,ctx)` and `fallback(v)`. `test/sim.mjs`: seeded `rng`, `scripted` (the old matches-test player, now shared), `bot`, `play()` with a simulated clock, `setHand`. `matches.test.mjs` uses it.
   - Strength (`node scripts/bot-stats.mjs`): all-bot 4-player games median ~65 turns (~16 rounds), 5–6 players ~130 turns (paired turns count twice); 2 bots vs 2 scripted players win ~80–100%. The scripted player is weak, so this shows sense, not strength; the browser play-test in step 6 is the real check.
   - Bots post a 1-for-1 offer on about half their turns when one or two cards short; they rarely trade with each other (both must gain).
+- 2026-11-03, step 4 (commit 866d4ee): `wake()`/`step()` runner, `PAUSE` per phase × `BOT_PACE`, offer ages per room (divided by the pace, so a 20 s wait is 1 s at pace .05), presence (`away`, `offlineFor`, `waitsOn`, 5 s check, `BOT_AWAY`), release on stream connect and before any command from an `auto` seat (its own commit, so a stale command can't undo it), startup wake. Server test: host + 2 bots to turn 9 (the host plays via `decide` and answers offers), takeover refused while connected, `auto` refused from HTTP, automatic takeover, release on reconnect and on acting. Gotcha: an unread fetch stream in Node gets garbage-collected and closed, so the test reads every stream in the background.
+- 2026-11-03, step 5: client `named()` adds " (Bot)" to `auto` seats in every state it receives; `onlineIds` from the stream (a presence change now redraws even at the same revision); lobby open seats are `[data-command="addBot"]` buttons for the host, bot seats carry `data-bot` and `[data-remove-bot]`; sidebar "Away · let a bot play" `[data-takeover]` (only once the stream has reported presence); history lines `takeover`/`release`; `retryContext()` retries all active-player commands in `action`, and `discard`. Fixed: `fly()` threw after leaving a game mid-animation (state null). Browser test: add/remove bots, start with a friend, the friend leaves (Home button: headless Edge keeps the stream open on about:blank), takeover, two rounds, return.
+- 2026-11-03, step 6: played a full 4-seat game on the dev server (me via a click-anything script + 3 bots): Mila (Bot) won 10–5–5–2; bots offered and answered trades, discarded, moved the robber, bought and played cards. It showed bots sitting on 12–13 cards; they now spend down over the discard limit (end-of-turn hands over the limit 10% → 2%, discards per game 50 → 32). `bot-stats`: 4 bots median ~75 turns; 2 bots vs 2 scripted win ~80%. Docs: README, CLAUDE.md, How to play, project-log section 12.
+- 2026-11-03, step 6 checks: `npm test` 47/47; `THROTTLE=6 npm test` 47/47 twice. A throttled run once stalled in the new browser test: the runner re-checked a bot's own offer after `wait` *game* ms instead of `wait × BOT_PACE` real ms, so at test pace each ignored bot offer cost ~19 s (harmless at pace 1). Fixed in `step()`. Section 12 appended to `docs/project-log.md` (that file stays untracked, as before). Not checked: a real phone, and a human-vs-bots game played by a person rather than a script; the owner should play-test.

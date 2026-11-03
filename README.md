@@ -13,6 +13,7 @@ A private 2-6 player browser game following the 2025 rules of a classic island-t
 - **Trade at the table.** On your turn you offer a trade to everyone. Others accept, decline or counter; you choose who to trade with. Offers pop up over the corner of the board for everyone who can answer. Supply and port trades sit in the same panel.
 - **A history that says who got what.** Every roll, gain, theft, card, trade and build is written down with resource icons. Only the people involved see which card was stolen or bought.
 - **Sound everywhere.** Dice rattle, cards pop as they land, wooden knocks for building, coins for trades, a chime when your turn starts and a fanfare for the winner. All synthesized in the browser; mute it from the header.
+- **Bots fill the table.** The host can seat bots in the lobby (they get ordinary names marked "(Bot)") so two friends can play a full island. They roll, build, trade with you and answer your offers like an average player. If someone drops out, a bot plays their seat until they come back.
 - **A proper ending.** The winner gets a full-screen banner with confetti and the final scores, and the host can start a rematch.
 
 | | | |
@@ -81,7 +82,9 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are 
 - On your turn, open **Trade → Players** to offer a trade to everyone, or **Supply** for 4:1 and port trades. Other players accept, decline or **Counter**; you confirm with one of the players who accepted. Close the trade panel to hide offers until a new one arrives.
 - When only one player can be robbed, the robber steals from them at once.
 - Only you receive your private cards. Your own score includes hidden Victory Point cards; other players see your public score until the game ends.
-- Refreshing or reconnecting restores your saved seat and the current phase. An interrupted player must reconnect to finish required decisions; there are no automatic skips or bots.
+- Refreshing or reconnecting restores your saved seat and the current phase.
+- **Bots:** in the lobby the host clicks an open seat to add a bot, and the × on a bot to remove it. Bots play only from what their own seat can see.
+- **Someone left?** Their card shows **Away · let a bot play**; anyone at the table can click it. The game also does this by itself once a player the game is waiting on has been offline for a minute, as long as someone else is still connected. Their name reads "Name (Bot)" meanwhile, and the seat is theirs again the moment they reconnect. There are no automatic skips or forfeits.
 - Lobby **Seat recovery** provides a private recovery key. On another device, use **How to play → Recover a seat**. Protect this key like a password. Room invitations grant a new lobby seat, not control of an existing player.
 - A finished game can be rematched by the host. Existing players keep their seats and must ready again.
 
@@ -91,9 +94,11 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are 
 node --test test/*.test.mjs
 ```
 
-Tests cover board inventories and topology, fixed and snake setups at all player counts, legal moves, trades, production shortages, robbery and discards, all development actions, paired turns, scoring, privacy, resource conservation, complete simulated games, HTTP authentication, duplicate commands, stale revisions, live streams, and server restart recovery. Network integration tests create isolated temporary databases in ignored `tmp/` directories.
+Tests cover bots (whole games at every table size from their own views, hidden cards never changing their choices, trading answers, a strength check against a simple scripted player), board inventories and topology, fixed and snake setups at all player counts, legal moves, trades, production shortages, robbery and discards, all development actions, paired turns, scoring, privacy, resource conservation, complete simulated games, HTTP authentication, duplicate commands, stale revisions, live streams, and server restart recovery. Network integration tests create isolated temporary databases in ignored `tmp/` directories.
 
-Browser tests play through the real interface in headless Chrome, Chromium, or Edge with several isolated players: invitation links, the live lobby, simultaneous readying, setup placement, turns including the robber, reload reconnection, seat recovery on another device, phone-width layout, discards, a lone-victim robbery with its flying card, trade offers answered and countered at the same moment, bank trades, every development card, who hears which sound, the mute toggle, a Largest Army win with its banner followed by a rematch, and 5-player paired turns. Situations dice cannot be relied on to produce are staged by rewriting the saved game between commands, keeping supply and deck totals conserved; everything else goes through the interface. They use an installed browser (set `BROWSER=/path/to/chrome` to choose one) and are skipped when none is found.
+Browser tests play through the real interface in headless Chrome, Chromium, or Edge with several isolated players: invitation links, the live lobby, simultaneous readying, setup placement, turns including the robber, reload reconnection, seat recovery on another device, phone-width layout, discards, a lone-victim robbery with its flying card, trade offers answered and countered at the same moment, bank trades, every development card, who hears which sound, the mute toggle, a Largest Army win with its banner followed by a rematch, 5-player paired turns, and a game with bots, including a bot standing in for a friend who left and handing the seat back. Situations dice cannot be relied on to produce are staged by rewriting the saved game between commands, keeping supply and deck totals conserved; everything else goes through the interface. They use an installed browser (set `BROWSER=/path/to/chrome` to choose one) and are skipped when none is found.
+
+`node scripts/bot-stats.mjs [games]` plays many seeded bot games and prints game lengths, wins by seat and the win share against the scripted player, for tuning bot strength.
 
 `node scripts/review-screens.mjs <dir>` stages a four-player game and saves screenshots of every major screen for design reviews (`FORMAT=jpeg` for smaller files, as used for `docs/screenshots/`).
 
@@ -132,12 +137,14 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 | Path | Purpose |
 | --- | --- |
 | `lib/engine.mjs` | Pure rules engine, legal moves, scoring, player-specific views |
+| `lib/bot.mjs` | Bot player: picks one legal command from a seat's own view |
 | `lib/board.mjs` | Hex/vertex/edge graph, board presets, ports, token sequences |
 | `server.mjs` | HTTP API, SSE transport, authentication, SQLite transactions |
 | `public/` | Responsive interface and original board rendering |
 | `test/` | Rule, complete-match, server integration, and headless browser tests |
 | `scripts/backup.mjs` | Consistent SQLite backup utility |
 | `scripts/icons.mjs` | Generates the inline icon sprite (original resource art, Font Awesome interface icons) |
+| `scripts/bot-stats.mjs` | Bot strength and game-length statistics |
 | `scripts/review-screens.mjs` | Screenshots of every major screen in a staged game |
 | `docs/` | Screenshots, the first-game feedback plan, and project notes |
 | `RULES.md` | Source mapping and documented conventions |
@@ -145,7 +152,7 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 
 The implementation uses JavaScript ES modules and browser-native SVG/DOM rather than the originally proposed React/TypeScript/Socket.IO toolchain. Node's built-in HTTP, crypto, SQLite, and test libraries keep the application dependency-free. Every game command has an ID and expected revision; commands are serialized and persisted atomically before acknowledgement. A duplicate retry cannot spend resources twice. Reconnects receive a complete filtered snapshot.
 
-Intended for a few concurrent private games on one server. No public matchmaking, spectators, AI opponents, game timers, or additional expansions are included.
+Intended for a few concurrent private games on one server. No public matchmaking, spectators, game timers, or additional expansions are included.
 
 ## Credits
 
