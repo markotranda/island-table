@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newGame,addPlayer,apply,view,legalRoads,legalSettlements,routeLength,routePath,produce,score,tradeRatio,R,emptyHand,upgrade} from '../lib/engine.mjs';
-import {makeBoard} from '../lib/board.mjs';
+import {newGame,addPlayer,apply,view,legalRoads,legalSettlements,routeLength,routePath,produce,score,tradeRatio,R,emptyHand,upgrade,pending} from '../lib/engine.mjs';
+import {makeBoard,COLORS} from '../lib/board.mjs';
 function rng(seed=8){return n=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed%n;};}
 function fixture(n=4,setup='fixed',map=n>4?'extended':'base'){let g=newGame('test',map,setup);for(let i=0;i<n;i++){addPlayer(g,`id${i}`,`Player ${i}`);g.players[i].ready=true;}const r=rng();return order(apply(g,0,{type:'start'},r),r);}
 // Everyone rolls for the first turn until a single highest roll decides it.
@@ -161,4 +161,26 @@ test('saves from before map selection keep their implied map',()=>{
   assert.deepEqual([upgrade({count:5,players:[]}).map,upgrade({count:5,players:[]}).seats],['extended',6]);
   assert.deepEqual([upgrade({count:3,players:[]}).map,upgrade({count:3,players:[]}).seats],['base',4]);
   const current=newGame('test','extended');assert.equal(upgrade(structuredClone(current)).seats,6);
+});
+test('the host fills seats with bots named “(Bot)”, removes them, and they stay ready through settings and rematch',()=>{
+  let g=newGame('test','base');addPlayer(g,'h','Marko');assert.throws(()=>addPlayer(g,'x','Ana (Bot)'),/Only bots/);assert.throws(()=>addPlayer(g,'x','Ana (bot) '),/Only bots/);addPlayer(g,'t','Talbot');g.players.pop();addPlayer(g,'b','Guest');
+  assert.throws(()=>apply(g,1,{type:'addBot'},rng()),/host/);for(let i=0;i<2;i++)g=apply(g,0,{type:'addBot'},rng(i+3));
+  const bots=g.players.filter(p=>p.bot);assert.equal(bots.length,2);assert.ok(bots.every(p=>p.ready&&/^\w+ \(Bot\)$/.test(p.name)&&p.id.startsWith('bot-')));assert.ok(!bots.some(p=>p.name==='Marko (Bot)'),'a bot never takes a player’s first name');
+  assert.throws(()=>apply(g,0,{type:'addBot'},rng()),/full/);assert.throws(()=>apply(g,0,{type:'removeBot',player:1},rng()),/not a bot/);
+  g=apply(g,0,{type:'removeBot',player:2},rng());assert.equal(g.players.length,3);assert.deepEqual(g.players.map(p=>p.color),g.players.map((_,i)=>COLORS[i]));
+  g.players[1].ready=true;g=apply(g,0,{type:'settings',goal:8},rng());assert.equal(g.players[1].ready,false);assert.equal(g.players[2].ready,true,'bots stay ready');
+  assert.equal(view(g,0).players[2].bot,true);
+  g.players.forEach(p=>p.ready=true);g=order(apply(g,0,{type:'start'},rng()));assert.throws(()=>apply(g,0,{type:'addBot'},rng()),/host/);
+  g.phase='finished';g=apply(g,0,{type:'rematch'},rng());assert.equal(g.players[2].bot,true);assert.equal(g.players[2].ready,true);assert.equal(g.players[1].ready,false);
+});
+test('a bot can play for another player until they come back; pending lists who owes a decision',()=>{
+  let g=fixture(3,'variable');assert.deepEqual(pending(g),[g.active]);const other=(g.active+1)%3;
+  assert.throws(()=>apply(g,other,{type:'takeover',player:other},rng()),/another/);g=apply(g,g.active,{type:'takeover',player:other},rng());
+  assert.equal(g.players[other].auto,true);assert.equal(view(g,0).players[other].auto,true);assert.throws(()=>apply(g,g.active,{type:'takeover',player:other},rng()),/another/);
+  assert.equal(g.events.at(-1).kind,'takeover');assert.throws(()=>apply(g,g.active,{type:'release'},rng()),/No bot/);
+  g=apply(g,other,{type:'release'},rng());assert.equal(g.players[other].auto,undefined);assert.equal(g.events.at(-1).kind,'release');
+  assert.throws(()=>apply(g,g.active,{type:'takeover',player:String(other)},rng()),/another/);g=apply(g,other,{type:'takeover',player:other,auto:true},rng());assert.equal(g.events.at(-1).by,null);g.phase='finished';g=apply(g,other,{type:'release'},rng());assert.equal(g.players[other].auto,undefined,'a player can come back after the game ended');
+  g=clear(fixture(4));g.offers=[{id:'o',from:0,to:null,give:{...emptyHand(),wood:1},want:{...emptyHand(),ore:1},accepted:[1],declined:[2]}];assert.deepEqual(pending(g),[0,3]);
+  g.role=2;assert.deepEqual(pending(g),[0]);g.role=1;g.phase='discard';g.discards=[0,4,0,3];assert.deepEqual(pending(g),[1,3]);
+  g.phase='order';g.order={candidates:[0,2,3],done:[2]};assert.deepEqual(pending(g),[0,3]);
 });
