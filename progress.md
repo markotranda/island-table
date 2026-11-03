@@ -16,7 +16,7 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 5. Resource animations | done | d581ba4 | Usage after: 5-hour 46%, weekly 22%, context 30% |
 | 6. Win screen and sound | done | bf3c105 | Usage after: 5-hour 50%, weekly 22%, context 32% |
 | 7. Icons | done | 1e9d72f | 12 Font Awesome Free 6.7.2 icons downloaded from jsDelivr with the owner's OK. Usage after: 5-hour 55%, weekly 23%, context 35% |
-| 9. Sound everywhere | done | (next commit) | Added at the owner's request after step 8 |
+| 9. Sound everywhere | done | 2bb69b2 | Added at the owner's request after step 8 |
 | 8. Checks | done | 953c10e, 1e9d72f | `npm test` and `THROTTLE=6 npm test` 33/33 after step 7 |
 
 ## Log
