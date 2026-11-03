@@ -177,6 +177,16 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.deepEqual(await hand(B),{wood:0,brick:0,wool:2,wheat:2,ore:1});
     await resolveRoll(pages,A);
 
+    // A lone victim is robbed at once, without a pick: the card flies face-down for onlookers and face-up for the victim.
+    const lone=await stage(server,pages,(g,{setHand})=>{const h=g.board.hexes.find(h=>h.id!==g.robber&&h.vertices.every(v=>[undefined,a].includes(g.board.vertices[v].building?.owner))&&h.vertices.some(v=>!g.board.vertices[v].building));
+      g.board.vertices[h.vertices.find(v=>!g.board.vertices[v].building)].building={owner:b,kind:'settlement'};setHand(b,{ore:1});g.phase='robber';g.resumePhase='action';return h.id;});
+    await A.click(`[data-hex="${lone}"]`);
+    await C.waitFor(`document.querySelector('#fx .fly .fly-back')`,{message:'Onlookers did not see a face-down card fly'});
+    await B.waitFor(`document.querySelector('#fx .fly use[href="#ico-ore"]')`,{message:'The victim did not see their ore fly away'});
+    await A.waitFor(`document.querySelector('[data-command="end"]')`);assert.ok(!await A.has('[data-victim]'),'no pick for a single victim');
+    await C.waitFor(`document.querySelector('.log-list').textContent.includes('stole a resource from Seat ${b}')`);
+    await B.waitFor(`document.querySelector('.log-list .log-res[title="1 ore"]')`,{message:'The victim’s history does not name the stolen ore'});
+
     await stage(server,pages,(g,{setHand,deal,topDeck})=>{assert.equal(g.phase,'action');
       setHand(a,{wood:5,wool:1,wheat:2,ore:2});setHand(b,{brick:2,wool:2});setHand(c,{wool:3,ore:1});
       deal(a,'monopoly');deal(b,'invention');deal(c,'roads');deal(c,'vp');topDeck('knight');});

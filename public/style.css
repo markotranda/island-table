@@ -289,3 +289,10 @@ body{background:#a6754a radial-gradient(ellipse at 50% 30%,#bb8a5c 0%,#a6754a 55
 @keyframes total-pop{0%,25%{opacity:0;transform:scale(.4)}38%{opacity:1;transform:scale(1.2)}48%{transform:scale(1)}85%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.table-dice.roll-me,.table-dice.roll-me .die-wrap,.table-dice.tumbling .die-wrap{animation:none}.roll-total{animation:none;opacity:0}}
 @media(max-width:620px){.table-dice.roll-me .die{width:48px;height:48px}.roll-hint{font-size:13px}.roll-total{font-size:40px}}
+/* Resource animations: producing tiles flash, cards fly to their new owner. */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.fly{position:absolute;left:-22px;top:-22px;width:44px;height:44px;display:grid;place-items:center;background:#fffaf0;border:1px solid #cbbf9f;border-radius:9px;box-shadow:0 8px 16px #2a1c1066;will-change:transform}
+.fly-back{width:26px;height:36px;border-radius:4px;background:#2f4d48 repeating-linear-gradient(45deg,#ffffff14 0 4px,#0000 4px 8px);border:2px solid #f5ead1}
+.hex-glow{fill:#fff6c8;stroke:#f2c94c;stroke-width:5;stroke-linejoin:round;pointer-events:none;opacity:0;animation:hex-flash 2.6s ease-out both;animation-delay:var(--t)}
+@keyframes hex-flash{0%,26%{opacity:0}36%{opacity:.75}55%{opacity:.35}70%{opacity:.6}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.hex-glow{animation:none}}

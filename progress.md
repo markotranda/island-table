@@ -12,9 +12,9 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 1. Engine and rules | done | 2816040 | Usage after: 5-hour 32%, weekly 20%, context 22% |
 | 2. Board and build bar | done | e4605aa | Usage after: 5-hour 37%, weekly 21%, context 25% |
 | 3. Trade panel | done | 24a38f2 | Usage after: 5-hour 40%, weekly 21%, context 27% |
-| 4. Dice | done | (next commit) | |
-| 5. Resource animations | next | | Roll events already carry `gains:[{p,hex,r,n}]`; steal events carry `p`, `from` |
-| 6. Win screen and sound | pending | | |
+| 4. Dice | done | 3e524c8 | Usage after: 5-hour 42%, weekly 21%, context 29% |
+| 5. Resource animations | done | (next commit) | |
+| 6. Win screen and sound | next | | |
 | 7. Icons | pending | | Needs the owner's OK before downloading SVGs |
 | 8. Checks | pending | | |
 
@@ -50,6 +50,12 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - `diceHtml()`: on your `preRoll` the dice are a `<button class="table-dice roll-me" data-command="roll">` with a glow and "Roll the dice" pill; otherwise the last roll, with `.tumbling` + `.roll-total` for 2.6 s after a new roll. Roll button removed from the turn card; preRoll instruction text updated.
   - CSS keyframes `roll-glow`, `roll-wiggle`, `tumble`, `tumble2`, `total-pop`; disabled under `prefers-reduced-motion`.
   - `scripts/review-screens.mjs` adds `11-your-roll` and `12-roll-seen`.
+
+- 2026-11-03, step 5:
+  - Hex polygons carry `data-tile="<hex id>"`. `board()` draws `.hex-glow` over hexes in a live roll effect's `gains` (2.6 s, delayed to after the tumble).
+  - `playEffects()` (end of `render()`) plays each effect once (`f.played`): roll gains fly from `[data-tile]` to the owner (`cardOf(p,r)`: your own matching hand card, else that player's `.sidebar .player`), up to 3 cards per gain, starting at 800 ms; steals fly victim → thief, `.fly-back` when the viewer has no `secret`. Elements go in `#fx` (fixed overlay outside `#app`, created on demand) and use the Web Animations API, so redraws don't interrupt them. Skipped under reduced motion.
+  - Browser test stages a lone victim: no pick, onlooker sees `#fx .fly .fly-back`, victim sees the ore icon, histories differ accordingly. 3/3 with `THROTTLE=6`.
+  - `scripts/review-screens.mjs` re-stages and rerolls until the roll produces, so `12-roll-seen` shows glow and flights.
 
 ## Handoff prompt
 

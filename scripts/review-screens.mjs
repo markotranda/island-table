@@ -74,7 +74,10 @@ try{
   // Your roll: the glowing dice; then the tumble and total another player sees just after the roll.
   await stage(g=>{g.phase='preRoll';delete g.discards;delete g.resumePhase;g.players.forEach(p=>{p.played=false;});});
   await me.waitFor(`document.querySelector('.roll-me')`);await pause(500);await shot(me,'11-your-roll');
-  const watcher=pages[(viewer+1)%4];await me.click('.roll-me');await watcher.waitFor(`document.querySelector('.roll-total')`);await pause(1100);await shot(watcher,'12-roll-seen');
+  // Reroll (re-staging the turn) until the dice produce something, so the screenshot catches tiles flashing and cards in flight.
+  const watcher=pages[(viewer+1)%4];
+  for(let tries=0;tries<8;tries++){if(tries)await stage(g=>{g.phase='preRoll';g.offers=[];delete g.discards;delete g.resumePhase;g.robber=g.board.hexes.find(h=>h.resource==='desert').id;});await me.waitFor(`document.querySelector('.roll-me')`);await me.click('.roll-me');await watcher.waitFor(`document.querySelector('.roll-total')`);if(await watcher.has('.hex-glow'))break;}
+  await pause(1250);await shot(watcher,'12-roll-seen');
   await pause(800);
   // Game over.
   await stage(g=>{g.phase='finished';g.winner=0;g.offers=[];delete g.discards;delete g.resumePhase;const extra=g.board.vertices.filter(v=>v.building?.owner===0&&v.building.kind==='settlement');extra.forEach(v=>v.building.kind='city');while(score(g,0,true)<10){const i=g.deck.lastIndexOf('vp');g.deck.splice(i,1);g.players[0].cards.push({type:'vp',bought:-1,id:'review-vp-final-'+g.players[0].cards.length});}g.events.push({turn:g.turn,text:`Mara wins with ${score(g,0,true)} points!`});});
