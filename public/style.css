@@ -249,3 +249,23 @@ body{background:#a6754a radial-gradient(ellipse at 50% 30%,#bb8a5c 0%,#a6754a 55
 /* Hand, development cards and build bar share one row on desktop so the board keeps its height. */
 @media(min-width:851px){.hand-row{flex-wrap:nowrap;gap:18px}.hand .resource-card{width:70px;height:100px;margin-right:-8px}.hand .resource-card .resource-art{height:56px}.dev-cards{flex-wrap:nowrap}.dev-cards .dev-card{width:60px;height:92px}.build-buttons{gap:6px}.build{width:72px}}
 @media(min-width:851px) and (max-width:1250px){.hand .resource-card{width:58px;height:88px;margin-right:-12px}.hand .resource-card .resource-art{height:46px}.dev-cards .dev-card{width:52px;height:84px;font-size:9px}.dev-cards .dev-card svg{width:30px;height:30px}.build{width:62px}.build-piece svg{width:30px;height:26px}.build-name{font-size:10px}}
+/* Trading floats over the board's top-right corner; a bottom sheet on phones. */
+.trade-launcher,.trade-panel{position:absolute;top:12px;right:14px;z-index:3}
+.trade-launcher{display:flex;align-items:center;gap:6px;background:#fbf3dfee;border:1px solid #d6bd8b;border-radius:12px;padding:6px 6px 6px 12px;box-shadow:0 3px 0 #c8ad78,0 10px 18px #2a1c1040}
+.trade-launcher .eyebrow,.trade-head .eyebrow{color:#8a6a3a}
+.trade-panel{width:min(318px,calc(100% - 28px));max-height:calc(100% - 24px);overflow:auto;background:#fbf3df;border:1px solid #d6bd8b;border-radius:14px;padding:12px 14px 14px;box-shadow:0 4px 0 #c8ad78,0 18px 34px #2a1c1066;animation:panel-in .18s ease-out}
+.trade-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;position:sticky;top:-12px;background:#fbf3df;padding:4px 0 6px;z-index:1}
+.trade-tabs{display:flex;gap:4px;flex:1}
+.tab{padding:6px 11px;font-size:12px;border-radius:8px;background:#efe2c2;color:#4a3a26;box-shadow:none}
+.tab.selected{background:#2f4d48;color:#fbefd2}
+.tab b{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:#b55745;color:#fff;font-size:10px;margin-left:3px}
+.trade-close{padding:2px 9px;font-size:18px;line-height:1;background:none;color:#6c5a3e}
+.trade-panel .panel{margin:6px 0 10px;background:#fffaf0;border-color:#e2cfa4}
+.trade-panel .wide{margin-top:12px}
+.trade-panel .offer{background:#fffaf0;border:1px solid #e2cfa4;border-left:4px solid var(--player);border-radius:9px;padding:9px 10px;margin-top:8px}
+.offer.fresh{animation:offer-in .9s ease-out}
+@keyframes panel-in{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+@keyframes offer-in{0%{box-shadow:0 0 0 0 #f2c94c}30%{box-shadow:0 0 0 5px #f2c94caa}100%{box-shadow:0 0 0 0 #f2c94c00}}
+@media(prefers-reduced-motion:reduce){.trade-panel,.offer.fresh{animation:none}}
+@media(max-width:620px){.trade-panel{position:fixed;top:auto;bottom:0;left:0;right:0;width:auto;max-height:62vh;border-radius:16px 16px 0 0;box-shadow:0 -10px 30px #2a1c1066}.trade-launcher{top:auto;bottom:10px;right:auto;left:10px;padding:4px 4px 4px 9px}.trade-launcher .eyebrow{display:none}}
+.trade-panel .offer-who{margin-bottom:4px}.trade-panel .offer-cards,.trade-panel .offer-for{display:inline-flex;gap:4px;vertical-align:middle;flex-wrap:wrap}.trade-panel .offer-for{margin:0 6px;color:#8a7a5c}

@@ -189,7 +189,10 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.ok(await B.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').disabled`),'the build bar waits for your turn');
     assert.deepEqual(await A.eval(`['road','buyCard'].map(k=>document.querySelector('[data-ui="build-bar"] [data-mode="'+k+'"],[data-ui="build-bar"] [data-command="'+k+'"]').disabled)`),[true,false],'the current player can buy what they can afford, and only that');
     await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
-    for(const page of [B,C])await page.waitFor(`document.querySelector('.offer [data-counter]')`,{message:'The offer did not reach the other players'});
+    for(const page of [B,C])await page.waitFor(`document.querySelector('[data-ui="trade-panel"] .offer [data-counter]')`,{message:'The offer did not open the trade panel for the other players'});
+    // Closing the panel hides the offer behind a launcher badge until it is reopened.
+    await B.click('[data-ui="trade-close"]');await B.waitFor(`!document.querySelector('.offer')`);assert.match(await B.text('[data-ui="trade-launcher"]'),/Offers\s*1/);
+    await B.click('[data-ui="trade-show"]');await B.waitFor(`document.querySelector('.offer [data-accept]')`);
     await C.click('.offer [data-counter]');await fill(C,'trade',{'give-wool':1,'want-wood':1});
     // Answer through the app's own handlers in the same instant: a mouse click can miss when the other answer arrives and shifts the layout mid-click.
     await Promise.all([B.eval(`document.querySelector('.offer [data-accept]').click()`),C.eval(`document.getElementById('trade').requestSubmit()`)]);

@@ -11,8 +11,8 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 0. Plan written | done | 2816040 (with step 1) | Usage at start: 5-hour 24%, weekly 19%, context 11% |
 | 1. Engine and rules | done | 2816040 | Usage after: 5-hour 32%, weekly 20%, context 22% |
 | 2. Board and build bar | done | e4605aa | Usage after: 5-hour 37%, weekly 21%, context 25% |
-| 3. Trade panel | next | | Trade UI currently lives in the right sidebar (`offerHtml()` in `app.js`), functional but below the fold |
-| 4. Dice | pending | | |
+| 3. Trade panel | done | (see log) | |
+| 4. Dice | next | | |
 | 5. Resource animations | pending | | Roll events already carry `gains:[{p,hex,r,n}]`; steal events carry `p`, `from` |
 | 6. Win screen and sound | pending | | |
 | 7. Icons | pending | | Needs the owner's OK before downloading SVGs |
@@ -37,6 +37,13 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - CSS appended at the end of `style.css` (token pips, build bar, one-row hand on desktop with a 851–1250px compact tier).
   - Browser test asserts the build bar is disabled off-turn and enables only affordable items.
   - Right column now holds: turn card, Trade with supply, End turn, Offer a player trade, offers, history. Step 3 moves trade out of it.
+
+- 2026-11-03, step 3:
+  - `tradePanel()` in `app.js`, rendered first inside `.board-wrap`. Shown when `mode` is `trade`/`bank` or some offer id is not in `dismissed`; otherwise a `.trade-launcher` with the same tabs (current player only) and an "Offers n" button (`data-ui="trade-show"`). Close (`data-ui="trade-close"`) puts current offer ids into `dismissed`.
+  - Tabs: Players (`data-mode="trade"`, current player in role 1) and Supply (`data-mode="bank"`, current player). Non-active players see offers only; Counter switches `mode` to `trade` with `counter` set.
+  - Bank and trade forms moved out of `controls()`; the right column is now turn card, End turn (+ build hint), waiting text, history.
+  - New offers flash once (`seenOffers`, `.offer.fresh`), respecting reduced motion. Phone: bottom sheet.
+  - Browser test: incoming offer opens the panel; close hides it behind the launcher; reopen works. Browser suite passed 2/2 with `THROTTLE=6`.
 
 ## Handoff prompt
 
