@@ -296,3 +296,26 @@ body{background:#a6754a radial-gradient(ellipse at 50% 30%,#bb8a5c 0%,#a6754a 55
 .hex-glow{fill:#fff6c8;stroke:#f2c94c;stroke-width:5;stroke-linejoin:round;pointer-events:none;opacity:0;animation:hex-flash 2.6s ease-out both;animation-delay:var(--t)}
 @keyframes hex-flash{0%,26%{opacity:0}36%{opacity:.75}55%{opacity:.35}70%{opacity:.6}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.hex-glow{animation:none}}
+/* Victory banner over the whole screen, with falling confetti. */
+.victory{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 40%,#2a1c10aa,#140c06e6);animation:victory-in .5s ease-out both;animation-delay:var(--t);overflow:hidden}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-6vh;height:14px;border-radius:2px;opacity:.95;animation:confetti-fall linear 3 both}
+.victory-card{position:relative;width:min(560px,100%);max-height:calc(100dvh - 40px);overflow:auto;text-align:center;background:#fbf3df;border:2px solid #d6bd8b;border-top:10px solid var(--player);border-radius:18px;padding:26px 30px 24px;box-shadow:0 6px 0 #c8ad78,0 30px 80px #000a;animation:card-up .7s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--t) + .15s)}
+.victory-card .eyebrow{color:#8a6a3a}
+.victory-card h1{font-size:54px;letter-spacing:-1.5px;margin:10px 0 4px;color:#2f2a20}
+.victory-name{color:var(--player);text-shadow:0 2px 0 #2a211933}
+.victory-points{font:italic 17px Georgia,serif;color:#5c5040;margin-bottom:14px}
+.trophy{display:block;margin:0 auto 6px;filter:drop-shadow(0 4px 6px #b48a3e88);animation:trophy-bounce 1.2s ease-in-out infinite alternate}
+.victory-card .scoreboard{text-align:left;margin:0 auto 16px}
+.victory-actions{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+.victory-actions button{padding:12px 22px;font-size:15px}
+.victory-actions .ghost{background:#fffaf0;border:1px solid #d6bd8b;box-shadow:0 3px 0 #c8ad78}
+.victory-actions .gold{box-shadow:0 3px 0 #b48a3e}
+.victory-actions .fine{margin:0}
+@keyframes victory-in{from{opacity:0}}
+@keyframes card-up{from{opacity:0;transform:translateY(40px) scale(.9)}}
+@keyframes confetti-fall{to{transform:translateY(115vh) rotate(var(--turn))}}
+@keyframes trophy-bounce{to{transform:translateY(-6px) rotate(4deg)}}
+.topbar .sound{display:inline-grid;place-items:center;padding:7px 9px}
+@media(prefers-reduced-motion:reduce){.victory,.victory-card,.trophy,.confetti i{animation:none}.confetti{display:none}}
+@media(max-width:620px){.victory-card{padding:20px 16px}.victory-card h1{font-size:38px}}

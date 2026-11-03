@@ -13,9 +13,9 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 2. Board and build bar | done | e4605aa | Usage after: 5-hour 37%, weekly 21%, context 25% |
 | 3. Trade panel | done | 24a38f2 | Usage after: 5-hour 40%, weekly 21%, context 27% |
 | 4. Dice | done | 3e524c8 | Usage after: 5-hour 42%, weekly 21%, context 29% |
-| 5. Resource animations | done | (next commit) | |
-| 6. Win screen and sound | next | | |
-| 7. Icons | pending | | Needs the owner's OK before downloading SVGs |
+| 5. Resource animations | done | d581ba4 | Usage after: 5-hour 46%, weekly 22%, context 30% |
+| 6. Win screen and sound | done | (next commit) | |
+| 7. Icons | next (ask owner first) | | Needs the owner's OK before downloading SVGs |
 | 8. Checks | pending | | |
 
 ## Log
@@ -56,6 +56,12 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - `playEffects()` (end of `render()`) plays each effect once (`f.played`): roll gains fly from `[data-tile]` to the owner (`cardOf(p,r)`: your own matching hand card, else that player's `.sidebar .player`), up to 3 cards per gain, starting at 800 ms; steals fly victim → thief, `.fly-back` when the viewer has no `secret`. Elements go in `#fx` (fixed overlay outside `#app`, created on demand) and use the Web Animations API, so redraws don't interrupt them. Skipped under reduced motion.
   - Browser test stages a lone victim: no pick, onlooker sees `#fx .fly .fly-back`, victim sees the ore icon, histories differ accordingly. 3/3 with `THROTTLE=6`.
   - `scripts/review-screens.mjs` re-stages and rerolls until the roll produces, so `12-roll-seen` shows glow and flights.
+
+- 2026-11-03, step 6:
+  - `victoryHtml()` renders a fixed full-screen `.victory` (`data-ui="victory"`) whenever `phase==='finished'` and not `victoryClosed`: confetti (`CONFETTI`, deterministic, resumed via `--t` from `victoryAt`), trophy, winner name in colour, `scoreboard()`, "View the board" (`data-ui="victory-close"`) and the host's `data-command="rematch"`. The right column's `.winner` card (with its own rematch button) appears only after closing, so there is one rematch button at a time. Both reset when the phase leaves `finished`.
+  - Sound: Web Audio, unlocked on the first `pointerdown`; `fanfare()` on a new `win` event, `rattle()` on every new `roll` event (both via `playEffects()`, which still plays sounds under reduced motion but skips flights). Mute button in the header (`data-ui="mute"`, inline speaker SVG), stored in `localStorage` key `island-muted`.
+  - Win browser test: banner on every screen; closing it reveals the board and the winner card; rematch from the banner.
+  - Not verified by ear in this session: sound output (headless tests can't hear). Worth a manual listen.
 
 ## Handoff prompt
 
