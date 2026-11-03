@@ -10,8 +10,8 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 |---|---|---|---|
 | 0. Plan written | done | 2816040 (with step 1) | Usage at start: 5-hour 24%, weekly 19%, context 11% |
 | 1. Engine and rules | done | 2816040 | Usage after: 5-hour 32%, weekly 20%, context 22% |
-| 2. Board and build bar | next | | |
-| 3. Trade panel | pending | | Trade UI currently lives in the right sidebar (`offerHtml()` in `app.js`), functional but below the fold |
+| 2. Board and build bar | done | e4605aa | Usage after: 5-hour 37%, weekly 21%, context 25% |
+| 3. Trade panel | next | | Trade UI currently lives in the right sidebar (`offerHtml()` in `app.js`), functional but below the fold |
 | 4. Dice | pending | | |
 | 5. Resource animations | pending | | Roll events already carry `gains:[{p,hex,r,n}]`; steal events carry `p`, `from` |
 | 6. Win screen and sound | pending | | |
@@ -29,6 +29,14 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Tests: new engine tests for trades, auto-steal, history/secrets; browser trade test rewritten (B accepts while C counters at once; A declines counter, confirms B); passed 3/3 with `THROTTLE=6`. `scripts/review-screens.mjs` uses the new flow and structured events.
   - `RULES.md` conventions added (auto-steal, trade flow, what history reveals); help text updated; `CLAUDE.md` updated.
   - Gotcha: Python `open(...,'w')` on Windows writes CRLF; harmless because `core.autocrlf=true`, but prefer the Edit tool or `newline=''`.
+
+- 2026-11-03, step 2 (commit e4605aa):
+  - `board()` viewBox margins 190/170 → 152/152; `token(h)` draws a r=23 disc at `h.y+11`, number at `cy-4`, pips as circles at `cy+13`; icon 28px at `h.y-43`; robber at `x+33,y+24` on numbered hexes.
+  - Heading row removed: `.table-line` is absolutely positioned on `.board-wrap`; Field guide button removed (`modal==='costs'` still works but nothing opens it).
+  - `buildBar()` / `buildPiece()` / `BUILD` in `app.js`, rendered at the end of `hand()`'s `.hand-row`; disabled with a `title` reason. Costs card removed from `controls()`. Esc clears `mode`.
+  - CSS appended at the end of `style.css` (token pips, build bar, one-row hand on desktop with a 851–1250px compact tier).
+  - Browser test asserts the build bar is disabled off-turn and enables only affordable items.
+  - Right column now holds: turn card, Trade with supply, End turn, Offer a player trade, offers, history. Step 3 moves trade out of it.
 
 ## Handoff prompt
 
