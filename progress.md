@@ -92,10 +92,10 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 
 | Step | State | Commit | Notes |
 |---|---|---|---|
-| 0. Plan written | done | | |
-| 1. Page fixes | next | | |
-| 2. Saved seats | | | |
-| 3. Build cards | | | |
+| 0. Plan written | done | 6ad8588 | Usage at start: 5-hour 64%, weekly 24%, context 11% |
+| 1. Page fixes | done | 6ad8588 | |
+| 2. Saved seats | done | see log | |
+| 3. Build cards | next | | |
 | 4. Stacked dev cards | | | |
 | 5. Setup flights | | | |
 | 6. Placement highlight | | | |
@@ -103,3 +103,13 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 8. Checks | | | |
 
 ## Round 2 log
+
+- 2026-11-03, step 1 (commit 6ad8588):
+  - White strip: `:root` painted cream, so the body's wood stopped at the body box and a collapsed bottom margin showed cream below. The wood is now on `:root`; `#app` is a `flow-root` so margins don't escape.
+  - Scroll: `.game-layout` had `min-height:570px` (+76px top bar), so any window under ~646px tall scrolled. Floor is now 470px, and `html:has(.game-layout){overflow:hidden}` at ≥851px wide and ≥546px tall. Phones keep page scroll (stacked layout).
+  - Driver gained `page.resize(w,h)`. The first browser test asserts no document scroll at 1280x900 and 1000x600 (fails with the old floor) and the wood gradient on `html` in the lobby.
+  - `test/browser.test.mjs` has CRLF line endings in the working copy; edit with that in mind.
+
+- 2026-11-03, step 2:
+  - `app.js`: `store()`, `prune()`, `markOver(id,over)`, `checkSeats()`. Seats carry `at` (last entered, set by `remember()`) and `over` (when first seen finished; cleared on rematch). `accept()` and `enter()` keep `over` current; `enter()` forgets the seat on 401/404. On load: `prune()`, then `checkSeats()` asks the server about every other saved seat and re-renders the home page only if something changed. Home list shows the 5 most recently used.
+  - Browser test (phone-width test) seeds a seat for a missing room and one finished 8 days ago; only the live seat remains and is the one offered for resume. Fails with the cleanup call removed.

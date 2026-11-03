@@ -164,6 +164,10 @@ test('browser: phone-width home and lobby fit without horizontal scrolling',{ski
     assert.match(await page.text('[data-ui="start-hint"]'),/at least one more player/,'a lone host is told why they cannot start');
     await page.click('[data-ui="invite"]');
     assert.match(await page.waitFor('window.__copied.at(-1)'),new RegExp(`^${server.invite.replace(/[.]/g,'\\.')}/\\?room=[a-f0-9]{12}$`));
+    // Saved seats clean themselves up: a seat for a room that is gone, or a game over for more than a week, is forgotten; the live seat stays.
+    await page.eval(`(()=>{const s=JSON.parse(localStorage.getItem('island-seats'));s.aaaaaaaaaaaa={room:'aaaaaaaaaaaa',token:'${'0'.repeat(64)}',at:2};s.bbbbbbbbbbbb={room:'bbbbbbbbbbbb',token:'${'1'.repeat(64)}',at:1,over:Date.now()-8*864e5};localStorage.setItem('island-seats',JSON.stringify(s));})()`);
+    await page.goto(server.host);
+    assert.equal(await page.waitFor(`(()=>{const k=Object.keys(JSON.parse(localStorage.getItem('island-seats')));return k.length===1&&k[0];})()`,{message:'Stale saved seats were not cleaned up'}),await page.eval(`document.querySelector('[data-resume]')?.dataset.resume`));
     assert.deepEqual(page.errors,[]);
   }finally{await page?.close().catch(()=>{});await browser?.close();await server.stop();}
 });
