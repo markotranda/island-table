@@ -20,6 +20,11 @@ test('board graph counts, terrain inventories, reciprocal edges and legal ports'
 test('all supported fixed games start with two settlements, roads and resources per player',()=>{
   for(const n of [2,3,4,5,6]){const g=fixture(n);assert.equal(g.phase,'preRoll');g.players.forEach((p,i)=>{assert.equal(g.board.vertices.filter(v=>v.building?.owner===i).length,2);assert.equal(g.board.edges.filter(e=>e.owner===i).length,2);assert.equal(Object.values(p.hand).reduce((a,b)=>a+b),3);});assert.equal(g.board.vertices.filter(v=>v.building?.owner===-1).length,n===5?2:0);conserved(g);}
 });
+test('starting resources name the hexes they came from, in fixed and variable setup',()=>{
+  for(const setup of ['fixed','variable']){let g=fixture(4,setup);while(g.phase.startsWith('setup')){const p=g.active;g=action(g,p,{type:'settlement',vertex:legalSettlements(g,p,true)[0]});g=action(g,p,{type:'road',edge:legalRoads(g,p,g.anchor)[0]});}
+    const grants=g.events.filter(e=>e.kind==='gain'||e.gain);assert.equal(grants.length,4,setup);
+    for(const e of grants){const res=e.res||e.gain,tally=emptyHand();for(const x of e.gains){assert.equal(x.p,e.p);assert.equal(g.board.hexes[x.hex].resource,x.r);tally[x.r]+=x.n;}assert.deepEqual(tally,res,setup);}}
+});
 test('variable snake placement completes at every player count and obeys distance',()=>{
   for(const n of [2,3,4,5,6]){let g=fixture(n,'variable');const start=g.active,seen=[];while(g.phase.startsWith('setup')){seen.push(g.active);const p=g.active;g=action(g,p,{type:'settlement',vertex:legalSettlements(g,p,true)[0]});g=action(g,p,{type:'road',edge:legalRoads(g,p,g.anchor)[0]});}assert.deepEqual(seen,[...Array(n)].map((_,i)=>(start+i)%n).concat([...Array(n)].map((_,i)=>(start+n-1-i)%n)));assert.equal(g.active,start);conserved(g);}
 });

@@ -97,8 +97,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 2. Saved seats | done | see log | |
 | 3. Build cards | done | see log | |
 | 4. Stacked dev cards | done | see log | |
-| 5. Setup flights | next | | |
-| 6. Placement highlight | | | |
+| 5. Setup flights | done | see log | |
+| 6. Placement highlight | next | | |
 | 7. Tooltips | | | |
 | 8. Checks | | | |
 
@@ -124,3 +124,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - `devStacks(me,playable)` in `app.js`: one `.dev-card` per type (order of `names`), `data-card` = id of a playable card of that type (else the first), new `data-type`, count badge `<b>` when more than one, "n new" tag moved to the bottom. `DEV_HELP` holds what each card does; it is in the card's title now and is meant for the step 7 tooltips (and history).
   - Stacks get an offset second edge (`box-shadow`); badge styled like hand cards.
   - Browser test: two dealt Knights render as one card with "2"; the title explains the card. Review script deals Mara two Knights.
+
+- 2026-11-03, step 5:
+  - Engine: `sources(g,p,v)` lists `{p,hex,r,n:1}` for the non-desert hexes around a vertex. Fixed setup's `gain` event and variable setup's second-settlement `build` event carry `gains` (same shape as a roll's).
+  - Client: `board()` glows hexes for any live effect with `gains` (non-roll ones for 1.8 s, with `--t` shifted 800 ms past the roll tumble); `playEffects()` flies `gains` for every event kind, starting at 150 ms instead of 800 for non-rolls.
+  - Tests: engine test that every starting grant's `gains` match its resources and hex terrain (fixed and variable); first browser test hears `pop` on every page after setup (fails when flights are limited to rolls).

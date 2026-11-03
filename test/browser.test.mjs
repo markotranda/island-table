@@ -126,7 +126,9 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`,{message:'Game did not start on every screen'});
     assert.match(await phaseLabel(host),/FOUNDATIONS/);
 
-    let active=await playSetup(pages);
+    await listen(pages);let active=await playSetup(pages);
+    // Starting resources fly from their tiles; each card that lands plays a pop.
+    for(const page of pages)await heard(page,'pop');
     // The game is one screen on desktop, down to short laptop windows: only panels inside it scroll.
     for(const [w,h] of [[1280,900],[1000,600]]){await host.resize(w,h);await host.waitFor(`document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth`,{message:`game page scrolls at ${w}x${h}`});}
     await host.resize(1280,900);
