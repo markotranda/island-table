@@ -100,7 +100,7 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 5. Setup flights | done | see log | |
 | 6. Placement highlight | done | see log | |
 | 7. Tooltips | done | see log | |
-| 8. Checks | next | | |
+| 8. Checks | done | see log | `npm test` and `THROTTLE=6 npm test` 35/35 |
 
 ## Round 2 log
 
@@ -143,3 +143,5 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Tests: engine test that `routePath` is a continuous trail of the owner's roads and appears in other players' views; browser test hovers C's road (tip, lit count = route length), then the dev card button (tip moves, highlight clears). Driver gained `page.hover()`. Review script adds `13-road-tip` and `14-card-tip`.
   - Gotcha: the scratchpad edit helper read stdin as cp1252 and garbled `’` once (fixed in `app.js` and an engine test name). If you script edits on this machine, read stdin as UTF-8.
   - Not done from the step 7 list: a tip on the sidebar player card as a whole (its stats already have tips) and on the robber pawn.
+
+- 2026-11-03, step 8: `npm test` and `THROTTLE=6 npm test` both 35/35. Review screenshots regenerated (now also `13-road-tip`, `14-card-tip`). All round 2 steps done; the owner should play-test. Not checked: touch long-press on a real phone, and the pulse/glow at the extended 30-hex board.
