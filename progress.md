@@ -95,8 +95,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 0. Plan written | done | 6ad8588 | Usage at start: 5-hour 64%, weekly 24%, context 11% |
 | 1. Page fixes | done | 6ad8588 | |
 | 2. Saved seats | done | see log | |
-| 3. Build cards | next | | |
-| 4. Stacked dev cards | | | |
+| 3. Build cards | done | see log | |
+| 4. Stacked dev cards | next | | |
 | 5. Setup flights | | | |
 | 6. Placement highlight | | | |
 | 7. Tooltips | | | |
@@ -113,3 +113,9 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 - 2026-11-03, step 2:
   - `app.js`: `store()`, `prune()`, `markOver(id,over)`, `checkSeats()`. Seats carry `at` (last entered, set by `remember()`) and `over` (when first seen finished; cleared on rematch). `accept()` and `enter()` keep `over` current; `enter()` forgets the seat on 401/404. On load: `prune()`, then `checkSeats()` asks the server about every other saved seat and re-renders the home page only if something changed. Home list shows the 5 most recently used.
   - Browser test (phone-width test) seeds a seat for a missing room and one finished 8 days ago; only the live seat remains and is the one offered for resume. Fails with the cleanup call removed.
+
+- 2026-11-03, step 3:
+  - `buildBar()`: pieces left is a corner badge `<b class="build-left">` (like hand cards); each cost card is `<i class="cost have|miss" data-res="r">`, green underline when in hand, faded with a red underline when missing, also off-turn. Title adds "(missing 1 brick, …)" and "n left". Disabled build cards no longer fade as a whole, only piece and name, so the marks stay readable. Cost icons are 12px (10px in the 851–1250px tier) so the city's five fit.
+  - Step 1 follow-up: the right column still scrolled as a whole with a long history, because the `.sr` screen-reader spans (absolutely positioned) escaped the log list's clipping to the nearest positioned ancestor. `.log-list{position:relative}`; on desktop the history fills the rest of the column (`flex:1`) and only its list scrolls.
+  - `scripts/review-screens.mjs` now prints which elements scroll on each screen (`scrolls:<class> client/scroll`).
+  - Browser tests: road cost marks for the active player and an off-turn player; with 40 staged history entries only `.log-list` scrolls, not `.control-sidebar` (fails without the `position:relative`).

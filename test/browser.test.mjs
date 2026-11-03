@@ -202,7 +202,9 @@ test('browser: discards, player and bank trades, and every development card',{sk
 
     await stage(server,pages,(g,{setHand,deal,topDeck})=>{assert.equal(g.phase,'action');
       setHand(a,{wood:5,wool:1,wheat:2,ore:2});setHand(b,{brick:2,wool:2});setHand(c,{wool:3,ore:1});
-      deal(a,'monopoly');deal(b,'invention');deal(c,'roads');deal(c,'vp');topDeck('knight');});
+      deal(a,'monopoly');deal(b,'invention');deal(c,'roads');deal(c,'vp');topDeck('knight');
+      // A long earlier history, so the layout check below has something to scroll.
+      for(let i=0;i<40;i++){g.eventSeq=(g.eventSeq??g.events.length)+1;g.events.splice(-1,0,{id:g.eventSeq,turn:g.turn-1,kind:'build',p:c,piece:'road'});}});
     assert.equal(await scoreOf(C,c),await scoreOf(A,c)+1,'a hidden Victory Point counts only on its owner’s screen');
     assert.ok(await C.eval(`${cardButton('Victory Point')}.disabled`),'Victory Point cards cannot be played');
 
@@ -211,6 +213,12 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.ok(!await B.has('[data-mode="trade"]'),'only the current player can start a trade');
     assert.ok(await B.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').disabled`),'the build bar waits for your turn');
     assert.deepEqual(await A.eval(`['road','buyCard'].map(k=>document.querySelector('[data-ui="build-bar"] [data-mode="'+k+'"],[data-ui="build-bar"] [data-command="'+k+'"]').disabled)`),[true,false],'the current player can buy what they can afford, and only that');
+    // With a long history only the history list scrolls, not the column around it.
+    assert.deepEqual(await A.eval(`(()=>{const l=document.querySelector('.log-list'),c=document.querySelector('.control-sidebar');return [l.scrollHeight>l.clientHeight,c.scrollHeight<=c.clientHeight];})()`),[true,true],'the history scrolls inside its own list');
+    // Cost cards show what you hold and what you miss, on and off your turn.
+    const marks=page=>page.eval(`[...document.querySelectorAll('[data-ui="build-bar"] [data-mode="road"] .cost')].map(e=>e.dataset.res+':'+e.className.split(' ')[1])`);
+    assert.deepEqual(await marks(A),['wood:have','brick:miss']);assert.deepEqual(await marks(B),['wood:miss','brick:have']);
+    assert.match(await A.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').title`),/missing 1 brick/);
     await listen([A,B,C]);await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
     for(const page of [B,C])await page.waitFor(`document.querySelector('[data-ui="trade-panel"] .offer [data-counter]')`,{message:'The offer did not open the trade panel for the other players'});
     // Closing the panel hides the offer behind a launcher badge until it is reopened.

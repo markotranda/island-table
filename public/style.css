@@ -330,3 +330,13 @@
 .roll-hint .ui-ico{margin-right:3px}
 /* The game page is one screen: on desktop only the columns, the history and the trade panel scroll inside it. */
 @media(min-width:851px) and (min-height:546px){html:has(.game-layout){overflow:hidden}}
+/* Build cards: pieces left in the corner like a hand card; cost cards underlined green when in hand, red and faded when missing. */
+.build{position:relative}.build:disabled{opacity:1;filter:none}.build:disabled .build-piece,.build:disabled .build-name{opacity:.5;filter:saturate(.4)}
+.build-left{position:absolute;top:-8px;right:-8px;min-width:21px;height:21px;border-radius:11px;background:#203a3f;color:#fff;font-size:11px;letter-spacing:0;display:grid;place-items:center;padding:0 5px;border:2px solid #fffaf0}
+.build-cost{gap:2px}.build-cost .cost{display:block;padding-bottom:2px;border-bottom:2px solid #5f9e4f;line-height:0}.build-cost .cost.miss{border-bottom-color:#c4473a}.build-cost .cost.miss .ico{opacity:.35;filter:grayscale(.7)}
+.build-cost{gap:1px}.build-cost .ico{width:12px;height:12px}
+@media(min-width:851px) and (max-width:1250px){.build-cost .ico{width:10px;height:10px}}
+/* Desktop: the history takes whatever height the right column has left, and only its list scrolls. */
+@media(min-width:851px){.control-sidebar{display:flex;flex-direction:column}.control-sidebar>*{flex-shrink:0}.control-sidebar>.log{flex:1 1 0;min-height:150px;display:flex;flex-direction:column}.control-sidebar .log-list{flex:1 1 0;min-height:0;max-height:none}}
+/* Screen-reader text is absolutely positioned; anchoring it inside the list keeps it from stretching the column it would otherwise escape to. */
+.log-list{position:relative}
