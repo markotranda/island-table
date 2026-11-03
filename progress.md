@@ -156,8 +156,8 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 1. Lobby settings | done | see log | |
 | 2. Starting roll | done | see log | |
 | 3. Discard warning and window | done | see log | |
-| 4. Client fixes | in progress | | |
-| 5. Checks | pending | | |
+| 4. Client fixes | done | see log | |
+| 5. Checks | in progress | | |
 
 ## Round 3 log
 
@@ -176,3 +176,11 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - `hand()`: holding more than `state.limit` cards adds `.hand.at-risk` (red edge on the cards) and a `[data-ui="discard-risk"]` note "Over 7: a 7 costs you n" with a tooltip.
   - `discardHtml()`: a fixed full-screen `.discard-screen` (`data-ui="discard"`) holding the same `#discard` form (h3 "Return n resources", picker, total) for players who owe cards; names others still discarding. Removed from the right column. Entrance animation resumes from `discardAt` so live redraws don't replay it.
   - Browser test asserts the window, the warning at 9 cards, none at 1, and both gone after discarding. Review script: new `15-starting-roll`; `08-discard` now shows the window.
+
+- 2026-11-03, step 4 (client fixes):
+  - History scroll bar: reproduced with 24-character names at 1000px wide: the list's content was 219px in a 173px box, so it scrolled sideways (`.who` was `nowrap`). Now `.log-list{overflow-x:hidden;overflow-wrap:anywhere;scrollbar-gutter:stable}` and names wrap. `render()` also keeps the scroll position of `.log-list`, `.trade-panel` and `.discard-card` (`SCROLLERS`) across redraws.
+  - Trade panel blink: its `panel-in` entrance replayed on every redraw. `panelAt` (reset when the panel closes) gives it `--t`, used as `animation-delay`.
+  - Steal tooltip: could not reproduce a leak of resource types; `view()` and every `data-tip` were audited and none carries another player's hand. Likely causes fixed: (1) tips popped up for whatever appeared under a still pointer (the browser reports the new element when the robber's hex overlay or the victim panel vanishes); `pointerover` at the last `pointermove` position is now ignored and `retip()` re-shows only the same tip text; (2) building tips read like hands ("Mara’s city: 2 cards each on 6 ore") and now say "Mara’s city. Produces 2 ore on 6, 2 wool on 9." Also found buildings had `pointer-events:none`, so their round 2 tooltips never showed; now hoverable.
+  - Flake found: "discards, player and bank trades" counted all `[data-placed]` on C after Road Building, which includes B's robber pulse when B had just rolled a 7 (actual 1). Now counts only `[data-placed="edge"]`.
+  - Tests: still-pointer `pointerover` shows no tip; building tip wording; hovering a building shows its tip; history has no sideways scroll and keeps its scroll through a redraw; the open trade panel has no running animation after live answers.
+  - Owner should report with a screenshot if the steal tooltip still shows other players' resources.

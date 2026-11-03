@@ -225,6 +225,18 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await A.waitFor(`document.querySelector('[data-command="end"]')`);assert.ok(!await A.has('[data-victim]'),'no pick for a single victim');
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('stole a resource from Seat ${b}')`);
     await B.waitFor(`document.querySelector('.log-list .log-res[data-tip="1 ore"]')`,{message:'The victim’s history does not name the stolen ore'});
+    // Picking one of two victims. When the page changes under a still pointer (the pick panel or the robber's hex overlay vanishing),
+    // the browser reports whatever is now there at the same spot; its tip must not pop up unasked, as if it showed someone's cards.
+    await stage(server,pages,(g,{setHand})=>{setHand(b,{wool:2});setHand(c,{wheat:2});g.phase='steal';g.victims=[b,c];g.resumePhase='action';for(let i=0;i<12;i++)g.events.push({id:++g.eventSeq,turn:g.turn,kind:'roll',p:b,dice:[3,3],gains:[{p:b,hex:0,r:'wool',n:2},{p:c,hex:1,r:'wheat',n:1}],short:[],blocked:null});});
+    await A.hover(`[data-victim="${c}"]`);await A.click(`[data-victim="${c}"]`);await A.waitFor(`!document.querySelector('[data-victim]')`);
+    const spot=await A.eval(`(()=>{const e=document.querySelector('.building[data-owner="${b}"]'),r=e.getBoundingClientRect(),x=r.x+r.width/2+2,y=r.y+r.height/2+2;document.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,pointerType:'mouse'}));e.dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:x,clientY:y,pointerType:'mouse'}));return e.dataset.tip;})()`);
+    await pause(700);assert.equal(await A.eval(`document.querySelector('#tip.visible')?.textContent??null`),null,'no tooltip for what appears under a still pointer');
+    assert.match(spot,/^Seat \d’s (settlement|city)\. Produces \d \w+ on \d+/,'building tips say what the building produces, not what anyone holds');
+    await A.hover(`.building[data-owner="${b}"] g path:last-child`);await A.waitFor(`document.querySelector('#tip.visible')?.textContent.includes('Produces')`,{message:'moving onto a building still shows its tip'});
+    // The history wraps long lines instead of scrolling sideways, and keeps its scroll position through live updates.
+    assert.ok(await A.eval(`(()=>{const l=document.querySelector('.log-list');return l.scrollWidth<=l.clientWidth;})()`),'the history does not scroll sideways');
+    const scrolled=await A.eval(`document.querySelector('.log-list').scrollTop=60,document.querySelector('.log-list').scrollTop`);assert.ok(scrolled>0,'the history is long enough to scroll');
+    await openPanel(A,'bank','bank');assert.equal(await A.eval(`document.querySelector('.log-list').scrollTop`),scrolled,'a redraw keeps the history where it was scrolled');await A.click('[data-mode="bank"]');await A.waitFor(`!document.getElementById('bank')`);
 
     await stage(server,pages,(g,{setHand,deal,topDeck})=>{assert.equal(g.phase,'action');
       setHand(a,{wood:5,wool:1,wheat:2,ore:2});setHand(b,{brick:2,wool:2});setHand(c,{wool:3,ore:1});
@@ -258,6 +270,8 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await Promise.all([B.eval(`document.querySelector('.offer [data-accept]').click()`),C.eval(`document.getElementById('trade').requestSubmit()`)]);
     for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);
     await A.waitFor(`document.querySelector('.offer [data-confirm]')&&document.querySelectorAll('.offer').length===2`,{message:'The accept and the counteroffer did not both reach the active player'});
+    // Answers redraw the panel live; it must not replay its entrance each time (it used to blink).
+    await pause(300);assert.equal(await A.eval(`document.querySelector('[data-ui="trade-panel"]').getAnimations().length`),0,'the open trade panel does not animate again on a live update');
     assert.equal((await hand(B)).brick,2,'accepting alone moves no cards');
     // Arrival order is up to the race, so find C's counteroffer by its text rather than its position.
     const declineC=await A.eval(`[...document.querySelectorAll('.offer')].find(o=>o.textContent.includes('Seat ${c} counters')).querySelector('[data-decline]').dataset.decline`);
@@ -298,7 +312,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     for(const n of [1,2]){await C.click('[data-edge]');await C.waitFor(`document.querySelectorAll('.road').length===${roads+n}`);}
     // Everyone else sees the new roads pulse in C's colour; C, who placed them, does not.
     await A.waitFor(`document.querySelectorAll('[data-placed="edge"]').length===2`,{message:'New roads were not highlighted for other players'});
-    assert.equal(await C.eval(`document.querySelectorAll('[data-placed]').length`),0);
+    assert.equal(await C.eval(`document.querySelectorAll('[data-placed="edge"]').length`),0,'C does not see its own roads pulse');
     // Hovering one of C's roads explains it and lights up C's longest route; hovering a card says what it does.
     await A.hover(`.road[data-owner="${c}"]`);
     const tip=await A.waitFor(`document.querySelector('#tip.visible')?.textContent`,{message:'No tooltip on a road'});
