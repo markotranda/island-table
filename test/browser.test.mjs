@@ -186,6 +186,8 @@ test('browser: discards, player and bank trades, and every development card',{sk
     // Only the current player starts trades. B accepts while C counters at the same moment: both reach A live,
     // A declines the counter and then chooses B among the players who accepted.
     assert.ok(!await B.has('[data-mode="trade"]'),'only the current player can start a trade');
+    assert.ok(await B.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').disabled`),'the build bar waits for your turn');
+    assert.deepEqual(await A.eval(`['road','buyCard'].map(k=>document.querySelector('[data-ui="build-bar"] [data-mode="'+k+'"],[data-ui="build-bar"] [data-command="'+k+'"]').disabled)`),[true,false],'the current player can buy what they can afford, and only that');
     await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
     for(const page of [B,C])await page.waitFor(`document.querySelector('.offer [data-counter]')`,{message:'The offer did not reach the other players'});
     await C.click('.offer [data-counter]');await fill(C,'trade',{'give-wool':1,'want-wood':1});
