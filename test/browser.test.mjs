@@ -31,8 +31,20 @@ async function joinByInvite(page,link,name){
   await page.goto(link);await page.waitFor(`document.querySelector('#code')?.value.length===12`,{message:'Invite did not prefill the room code'});
   await page.type('#nickname',name);await page.click('#entry button.primary');await page.waitFor(`document.querySelector('[data-command="ready"]')`);
 }
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+// Everyone taps their dice for the first turn at the same moment, again after a tie, until the starting roll is over.
+async function rollForStart(pages){
+  for(let step=0;step<60;step++){
+    const ready=[];for(const page of pages)if(await page.has('[data-command="firstRoll"]'))ready.push(page);
+    if(ready.length)await Promise.all(ready.map(page=>page.click('[data-command="firstRoll"]').catch(()=>{})));
+    let open=false;for(const page of pages)if(await page.has('[data-ui="order"]'))open=true;
+    if(!open)return;await pause(150);
+  }
+  throw new Error('The starting roll did not finish');
+}
 // Plays every setup placement by clicking the first highlighted target on whichever page has one.
 async function playSetup(pages){
+  await rollForStart(pages);
   for(let step=0;step<40;step++){
     for(const page of pages)if(await page.has('[data-command="roll"]'))return page;
     let placed=false;
@@ -41,7 +53,6 @@ async function playSetup(pages){
   }
   throw new Error('Setup did not finish');
 }
-const pause=ms=>new Promise(r=>setTimeout(r,ms));
 // Sound cues each page played since listening started (the client logs them to window.__sounds; tests cannot hear them).
 const listen=pages=>Promise.all(pages.map(p=>p.eval('window.__sounds=[]')));
 const heard=(page,name)=>page.waitFor(`window.__sounds?.includes(${JSON.stringify(name)})`,{message:`Expected the "${name}" sound`});
@@ -82,7 +93,7 @@ async function seatTable(browser,server,count,setup){
   await createTable(pages[0],server.host,'Seat 0',count>4?'extended':'base',setup);const room=await pages[0].eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
   for(let i=1;i<count;i++)await joinByInvite(pages[i],`${server.invite}/?room=${room}`,`Seat ${i}`);
   for(const page of pages){await page.click('[data-command="ready"]');await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
-  await pages[0].click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);
+  await pages[0].click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);await rollForStart(pages);
   return pages;
 }
 // Test fixture only: rewrites the saved game between commands to stage a situation dice cannot be relied on to produce,
@@ -130,7 +141,11 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     assert.match(await host.text('[data-ui="start-hint"]'),/Set sail now, or wait for more friends/);
     await host.click('[data-command="start"]');
     for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`,{message:'Game did not start on every screen'});
-    assert.match(await phaseLabel(host),/FOUNDATIONS/);
+    // Everyone rolls their own dice for the first turn, all at the same moment; conflicts resolve without a "try again".
+    assert.match(await phaseLabel(host),/STARTING ROLL/);
+    for(const page of pages)assert.ok(await page.has('[data-ui="order"] [data-command="firstRoll"]'),'everyone has their own dice to roll');
+    await listen(pages);await rollForStart(pages);
+    for(const page of pages){await heard(page,'roll');await page.waitFor(`document.querySelector('.log-list')?.textContent.includes('goes first')`,{message:'the starting roll winner is not in the history'});assert.match(await phaseLabel(page),/FOUNDATIONS/);assert.doesNotMatch(await page.text('#toast'),/try again/);}
     assert.match(await host.text('.table-line'),/First to 12 points/);
 
     await listen(pages);let active=await playSetup(pages);

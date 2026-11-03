@@ -363,3 +363,17 @@
 .table-settings label{margin-top:10px}.table-settings select{width:100%}
 .setting-value{display:block;padding:8px 0 2px;font-size:14px;color:#2f2a20}
 @media(max-width:620px){.table-settings{grid-template-columns:1fr}}
+/* The starting roll: a card over the board listing everyone's dice; your own dice are the button. */
+.order-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:min(380px,calc(100% - 28px));max-height:calc(100% - 24px);overflow:auto;background:#fbf3df;border:1px solid #d6bd8b;border-radius:14px;padding:16px 18px;box-shadow:0 4px 0 #c8ad78,0 18px 34px #2a1c1066;text-align:center}
+.order-card h2{margin:4px 0 2px;font-size:24px;color:#2f2a20}.order-card .eyebrow{color:#8a6a3a}
+.order-card ol{list-style:none;margin:12px 0 0;padding:0;text-align:left}
+.order-row{display:flex;align-items:center;gap:9px;min-height:46px;padding:6px 10px;border-radius:10px;border:1px solid transparent}
+.order-row .dot{width:12px;height:12px;border-radius:50%;background:var(--player);border:1px solid #2a211966;flex:none}
+.order-name{flex:1;font-weight:650;color:#2f2a20}
+.order-row.out{opacity:.5}.order-row.leading{background:#fffaf0;border-color:#f2c94c}
+.order-dice{display:flex;align-items:center;gap:5px}.order-dice b{min-width:26px;text-align:right;font:700 18px Georgia,serif;color:#2f2a20}
+.order-dice.tumbling .die-wrap{animation:tumble .85s cubic-bezier(.2,.8,.3,1) both;animation-delay:var(--t)}
+.order-row .table-dice.order-roll{position:static;flex-direction:row;padding:6px 10px;gap:6px}
+.order-row .table-dice.order-roll .die{width:34px;height:34px}
+.order-row .table-dice.order-roll .roll-hint{font-size:12px}
+@media(prefers-reduced-motion:reduce){.order-dice.tumbling .die-wrap{animation:none}}

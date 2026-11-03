@@ -154,8 +154,8 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 |---|---|---|---|
 | 0. Plan written | done | with step 1 | |
 | 1. Lobby settings | done | see log | |
-| 2. Starting roll | in progress | | |
-| 3. Discard warning and window | pending | | |
+| 2. Starting roll | done | see log | |
+| 3. Discard warning and window | in progress | | |
 | 4. Client fixes | pending | | |
 | 5. Checks | pending | | |
 
@@ -166,3 +166,8 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Client: create form asks only for a name. `tableSettings()` in the lobby: host gets selects (`data-setting="map|setup|goal|limit|friendly"`), others read-only values (`data-value=…`); the block carries the current values as `data-map`, `data-goal`… so tests can wait for the server's confirmation. `settings` is auto-retried on 409 (`retryContext`). Table line, help, discard texts use the settings.
   - Tests: engine test for validation, un-ready, discard limit, goal, friendly robber, rematch; browser test: host changes points to win, guest sees it and is un-readied, table line says "First to 12 points". `createTable()` now picks map/setup in the lobby.
   - The "discards, player and bank trades" browser test failed once in a full run (passed 6/6 alone and the next full run). Still the known rare flake; message not captured.
+
+- 2026-11-03, step 2 (starting roll):
+  - Engine: `start()` builds the board and enters phase `order` with `g.order={round,candidates,done,dice}`. Command `firstRoll` (any candidate who hasn't rolled this round) logs `order {p,dice,round}`; when all candidates have rolled, a tie logs `tie {players,total,round}` and narrows `candidates`, otherwise `first {p,total}` and `place()` (fixed placements or the setup order, formerly the tail of `start()`). No win check in `order`.
+  - Client: `orderHtml()` (`data-ui="order"`) over the board lists every player with their dice (tumble on new rolls), your own dice are the button (`data-command="firstRoll"`); turn card says who still rolls; toast "X goes first."; sounds: roll, warn on a tie. `firstRoll` auto-retries on 409 while the round and your own rolled flag are unchanged.
+  - Tests: engine test for any-order rolls, double-roll refusal, ties narrowing to the tied players, fixed placement after the roll; `fixture()`/matches/server tests roll through `order`. Browser: `rollForStart(pages)` clicks every page's dice at once (used by `playSetup` and `seatTable`); the first test asserts everyone has dice, nobody gets "try again", and the winner is in the history.

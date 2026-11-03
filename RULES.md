@@ -25,7 +25,7 @@ The source booklets are concise. The following conventions make incomplete edge 
 - Friendly robber (house rule, off by default): a player whose public score is 2 points or fewer cannot be robbed. The robber may still be moved next to them and still blocks the hex; they are simply not eligible victims.
 - Neither rulebook covers two players. A two-player game uses the normal rules unchanged, with no special variant.
 - On the Extended map, paired-player turns apply only with 5 or 6 players; with 2-4, turns are classic. In a fixed Extended setup with 2-4 players, the unused starting positions stay empty; the rulebook's neutral blockers apply only to the five-player game.
-- Tied starting dice rolls are rerolled among the tied players.
+- Every player rolls their own dice for the first turn, all at the same time and in any order. Once everyone still in contention has rolled, the highest total starts; tied players (only they) roll again. Fixed islands place their starting pieces once the first player is known.
 - A continuous route may revisit a vertex but cannot reuse a road. Opposing and neutral settlements stop traversal through their vertices; routes may end at them. The current award holder keeps a tied maximum; if they lose eligibility and others tie, the award becomes unclaimed.
 - Road Building places as many legal roads as possible, up to two; it finishes automatically if no piece or legal location remains.
 - Invention takes all remaining resource cards if fewer than two exist in the supply.

@@ -6,6 +6,8 @@ import {newGame,addPlayer,apply,legalRoads,legalSettlements,legalCities,tradeRat
 for(const count of [2,3,4,5,6])test(`${count} players complete an entire saved-and-restored game`,()=>{
   let seed=143+count;const random=n=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return Math.floor(seed/4294967296*n);};
   let g=newGame('simulation',count>4?'extended':'base','variable');for(let p=0;p<count;p++){addPlayer(g,String(p),`Test ${p}`);g.players[p].ready=true;}g=apply(g,0,{type:'start'},random);
+  // Players roll for the first turn in a shuffled order, as they would tap their dice at once.
+  while(g.phase==='order'){const left=g.order.candidates.filter(p=>!g.order.done.includes(p));g=apply(g,left[random(left.length)],{type:'firstRoll'},random);g=JSON.parse(JSON.stringify(g));}
   const send=(p,command)=>{g=apply(g,p,command,random);g.revision++;if(g.revision%25===0)g=JSON.parse(JSON.stringify(g));};
   let actions=0;
   while(g.phase!=='finished'&&actions++<15000){

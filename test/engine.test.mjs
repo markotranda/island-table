@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {newGame,addPlayer,apply,view,legalRoads,legalSettlements,routeLength,routePath,produce,score,tradeRatio,R,emptyHand,upgrade} from '../lib/engine.mjs';
 import {makeBoard} from '../lib/board.mjs';
 function rng(seed=8){return n=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed%n;};}
-function fixture(n=4,setup='fixed',map=n>4?'extended':'base'){let g=newGame('test',map,setup);for(let i=0;i<n;i++){addPlayer(g,`id${i}`,`Player ${i}`);g.players[i].ready=true;}return apply(g,0,{type:'start'},rng());}
+function fixture(n=4,setup='fixed',map=n>4?'extended':'base'){let g=newGame('test',map,setup);for(let i=0;i<n;i++){addPlayer(g,`id${i}`,`Player ${i}`);g.players[i].ready=true;}const r=rng();return order(apply(g,0,{type:'start'},r),r);}
+// Everyone rolls for the first turn until a single highest roll decides it.
+function order(g,r=rng()){while(g.phase==='order'){const p=g.order.candidates.find(p=>!g.order.done.includes(p));g=apply(g,p,{type:'firstRoll'},r);}return g;}
 const action=(g,p,c,random=rng())=>{const next=apply(g,p,c,random);next.revision=g.revision+1;return next;};
 function give(g,p,resource,n){g.bank[resource]-=n;g.players[p].hand[resource]+=n;}
 function clear(g){g.board.vertices.forEach(v=>v.building=null);g.board.edges.forEach(e=>e.owner=null);g.players.forEach(p=>{p.hand=emptyHand();p.cards=[];});g.bank=Object.fromEntries(R.map(r=>[r,g.map==='extended'?24:19]));g.active=0;g.primary=0;g.phase='action';return g;}
@@ -103,7 +105,7 @@ test('the map sets seats, board, supply and deck; the host starts once two or mo
     g=lobby(map);addPlayer(g,'a','A');g.players[0].ready=true;
     assert.throws(()=>apply(g,0,{type:'start'},rng()),/At least two/,'one player cannot start');
     addPlayer(g,'b','B');assert.throws(()=>apply(g,0,{type:'start'},rng()),/everyone must be ready/);
-    g.players[1].ready=true;g=apply(g,0,{type:'start'},rng());
+    g.players[1].ready=true;g=order(apply(g,0,{type:'start'},rng()));
     assert.equal(g.count,2);assert.equal(g.board.hexes.length,hexes);assert.equal(g.bank.wood,supply);assert.equal(g.deck.length,deck);
   }
 });
@@ -128,6 +130,23 @@ test('the host changes the table settings in the lobby; points to win, discard l
   r.board.vertices[v1].building={owner:1,kind:'settlement'};r.board.vertices[v2].building={owner:2,kind:'city'};for(const v of r.board.vertices.filter(v=>!v.building).slice(0,2))v.building={owner:2,kind:'settlement'};
   r.players[1].hand.ore=1;r.players[2].hand.ore=1;r.bank.ore-=2;r=apply(r,0,{type:'robber',hex:hex.id},rng());assert.equal(r.players[2].hand.ore,0,'the 4-point player is robbed');assert.equal(r.players[1].hand.ore,1,'the 1-point player is spared');
   const re=apply({...structuredClone(w),phase:'finished'},0,{type:'rematch'},rng());assert.deepEqual([re.goal,re.limit,re.friendly],[6,7,false],'a rematch keeps the settings');
+});
+
+test('everyone rolls for the first turn in any order; only tied players roll again',()=>{
+  let g=newGame('test','base','variable');for(const n of ['A','B','C'])addPlayer(g,n,n);g.players.forEach(p=>p.ready=true);g=apply(g,0,{type:'start'},rng());
+  assert.equal(g.phase,'order');const dice=list=>{let k=0;return ()=>list[k++]-1;};
+  assert.throws(()=>apply(g,0,{type:'roll'},rng()),/cannot roll now/);
+  g=apply(g,2,{type:'firstRoll'},dice([6,5]));assert.throws(()=>apply(g,2,{type:'firstRoll'},rng()),/already rolled/);
+  g=apply(g,0,{type:'firstRoll'},dice([2,2]));g=apply(g,1,{type:'firstRoll'},dice([5,6]));
+  assert.equal(g.phase,'order');assert.deepEqual(g.order.candidates,[1,2]);assert.equal(g.order.round,2);assert.deepEqual(g.events.at(-1),{...g.events.at(-1),kind:'tie',players:[1,2],total:11});
+  assert.throws(()=>apply(g,0,{type:'firstRoll'},rng()),/already rolled/,'players outside the tie wait');
+  g=apply(g,1,{type:'firstRoll'},dice([3,1]));g=apply(g,2,{type:'firstRoll'},dice([1,1]));
+  assert.equal(g.phase,'setupSettlement');assert.equal(g.active,1);assert.equal(g.primary,1);assert.deepEqual(g.setupOrder,[1,2,0,0,2,1]);
+  assert.deepEqual(g.events.filter(e=>e.kind==='order').map(e=>[e.p,e.round,e.dice[0]+e.dice[1]]),[[2,1,11],[0,1,4],[1,1,11],[1,2,4],[2,2,2]]);assert.equal(g.events.at(-1).kind,'first');
+  // A fixed island places its pieces once the starting player is known.
+  let h=newGame('test','base','fixed');for(const n of ['A','B'])addPlayer(h,n,n);h.players.forEach(p=>p.ready=true);h=apply(h,0,{type:'start'},rng());
+  assert.equal(h.board.vertices.filter(v=>v.building).length,0);h=apply(h,0,{type:'firstRoll'},dice([1,1]));h=apply(h,1,{type:'firstRoll'},dice([6,6]));
+  assert.equal(h.phase,'preRoll');assert.equal(h.active,1);assert.equal(h.board.vertices.filter(v=>v.building).length,4);
 });
 
 test('extended map with four players uses classic turns; paired turns need five or six',()=>{
