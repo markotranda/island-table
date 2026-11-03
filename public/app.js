@@ -29,7 +29,7 @@ function piece(kind,color,glow){const lit=tint(color,.3),dark=tint(color,-.4),o=
 const ui=(k,label)=>`<svg class="ui-ico" ${label?`role="img" aria-label="${label}"`:'aria-hidden="true"'}><use href="#ui-${k}"/></svg>`;
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const commandId=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
-let state=null,session=null,mode='',counter=null,victoryClosed=false,victoryAt=0,dismissed=new Set(),seenOffers=new Set(),seenEvent=null,effects=[],tab=location.search.includes('room=')?'join':'create',connected=false,busy=null,streamController=null,modal='';
+let state=null,session=null,mode='',counter=null,turnCue=null,victoryClosed=false,victoryAt=0,dismissed=new Set(),seenOffers=new Set(),seenEvent=null,effects=[],tab=location.search.includes('room=')?'join':'create',connected=false,busy=null,streamController=null,modal='';
 const params=new URLSearchParams(location.search);let room=params.get('room')||'';
 let saved={};try{saved=JSON.parse(localStorage.getItem('island-seats')||'{}');}catch{}
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('visible'),5000);}
@@ -47,25 +47,52 @@ async function connect(){
     }catch(e){if(controller.signal.aborted)return;connected=false;document.querySelectorAll('.connection-label').forEach(e=>e.textContent='Reconnecting…');await new Promise(r=>setTimeout(r,1800));}
   }
 }
-async function enter(s){session=s;room=s.room;seenEvent=null;effects=[];remember();state=await request(`/api/rooms/${room}`);render();connect();}
+async function enter(s){session=s;room=s.room;seenEvent=null;effects=[];turnCue=null;remember();state=await request(`/api/rooms/${room}`);render();connect();}
 // New history entries since the last render become short-lived effects (dice tumble, flying cards). The first state seen for a
 // room only sets the baseline, so loading or reloading a page never replays what already happened. An effect keeps its start time
 // across redraws: animations resume with a negative delay instead of restarting.
 function noticeEvents(){const last=state.events.at(-1)?.id??0,now=performance.now();if(seenEvent===null||last<seenEvent){seenEvent=last;effects=[];return;}for(const e of state.events)if(e.id>seenEvent)effects.push({...e,start:now});seenEvent=last;effects=effects.filter(f=>now-f.start<5000);}
 const effect=(kind,ms)=>effects.findLast(f=>f.kind===kind&&performance.now()-f.start<ms),since=f=>Math.round(performance.now()-f.start);
 // Sound is synthesized with Web Audio (no audio files). Browsers only allow it after a tap, so the context is unlocked on the
-// first pointer press; until then, and while muted, effects are silent. The mute choice is per browser.
-let audio=null,muted=false;try{muted=localStorage.getItem('island-muted')==='1';}catch{}
-document.addEventListener('pointerdown',()=>{try{audio??=new AudioContext();audio.resume();}catch{}},{capture:true});
+// first pointer press; until then, and while muted, cues are silent. The mute choice is per browser. Everything runs through one
+// quiet master gain so a long evening doesn't grate. cue(name) also logs to window.__sounds when a test has set it to an array.
+let audio=null,master=null,noiseBuf=null,muted=false;try{muted=localStorage.getItem('island-muted')==='1';}catch{}
+document.addEventListener('pointerdown',()=>{try{if(!audio){audio=new AudioContext();master=audio.createGain();master.gain.value=.55;master.connect(audio.destination);}audio.resume();}catch{}},{capture:true});
 const live=()=>!muted&&audio?.state==='running';
-function note(f,at,len,{type='sawtooth',gain=.1,cut=2400}={}){const c=audio,t=c.currentTime+at,o=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();o.type=type;o.frequency.value=f;lp.type='lowpass';lp.frequency.value=cut;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.03);g.gain.setValueAtTime(gain*.8,t+len*.7);g.gain.exponentialRampToValueAtTime(.0005,t+len);o.connect(lp).connect(g).connect(c.destination);o.start(t);o.stop(t+len+.05);}
-// A short brass-like call: a rising pickup, a held chord, then a bright resolution.
-function fanfare(){if(!live())return;const tune=[[392,0,.16],[523,.16,.16],[659,.32,.16],[784,.48,.5],[659,1,.16],[784,1.16,.9]];for(const [f,at,len] of tune){note(f,at,len);note(f/2,at,len,{gain:.05,cut:1200});}for(const f of [523,659,784,1047])note(f,2.1,1.4,{gain:.045,type:'triangle'});}
-// Dice rattle: a handful of filtered noise clicks of falling loudness, like two dice settling on wood.
-function rattle(){if(!live())return;const c=audio,len=Math.floor(c.sampleRate*.04),buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len)**3;
-  for(let k=0;k<9;k++){const t=c.currentTime+k*.055+Math.random()*.03,src=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;bp.type='bandpass';bp.frequency.value=1800+Math.random()*1600;bp.Q.value=3;g.gain.value=.5*(1-k/10);src.connect(bp).connect(g).connect(c.destination);src.start(t);}}
+// A tone with an optional pitch glide (to) and low-pass filter (cut), shaped by a fast attack and an exponential release.
+function tone(f,at,len,{type='sine',gain=.12,to=0,cut=0}={}){const c=audio,t=c.currentTime+at,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+len);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.012);g.gain.exponentialRampToValueAtTime(.0005,t+len);let n=o;if(cut){const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=cut;n=o.connect(lp);}n.connect(g).connect(master);o.start(t);o.stop(t+len+.05);}
+// Filtered noise: clicks, knocks, swishes and whooshes. sweep glides the filter frequency for a moving sound.
+function noise(at,len,{freq=1200,q=1,gain=.3,type='bandpass',sweep=0}={}){const c=audio,t=c.currentTime+at;if(!noiseBuf){noiseBuf=c.createBuffer(1,c.sampleRate,c.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=noiseBuf;f.type=type;f.frequency.setValueAtTime(freq,t);if(sweep)f.frequency.exponentialRampToValueAtTime(sweep,t+len);f.Q.value=q;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.0005,t+len);src.connect(f).connect(g).connect(master);src.start(t,Math.random()*.5);src.stop(t+len+.02);}
+const knock=(at,{f=190,gain=.22}={})=>{tone(f,at,.11,{gain,to:f*.6});noise(at,.05,{freq:f*5,q:4,gain:gain*1.2});};
+const PITCH={wood:523,brick:587,wool:659,wheat:784,ore:880};
+const SFX={
+  // Two dice tumbling, then the clack of them settling as the animation lands.
+  roll(){for(let k=0;k<9;k++)noise(k*.055+Math.random()*.03,.04,{freq:1800+Math.random()*1600,q:3,gain:.45*(1-k/10)});knock(.72,{f:900,gain:.12});knock(.8,{f:1050,gain:.1});},
+  pop(r){tone(PITCH[r]??660,0,.12,{gain:.09,to:(PITCH[r]??660)*1.5});tone((PITCH[r]??660)*2,.02,.08,{gain:.03});},
+  robber(){tone(110,0,.35,{gain:.25,to:48});noise(0,.18,{type:'lowpass',freq:400,gain:.3});},
+  steal(){noise(0,.2,{freq:900,sweep:3500,q:2,gain:.28});},
+  sour(){tone(233,.18,.35,{type:'triangle',gain:.07});tone(247,.18,.35,{type:'triangle',gain:.07});},
+  warn(){for(const at of [0,.18])tone(440,at,.13,{type:'square',gain:.05,cut:1400});},
+  road(){knock(0);},
+  settlement(){knock(0);knock(.13,{f:220});},
+  city(){knock(0,{f:150,gain:.28});knock(.12,{f:170,gain:.26});tone(1047,.22,.6,{type:'triangle',gain:.06});tone(1568,.26,.5,{type:'triangle',gain:.03});},
+  flip(){noise(0,.05,{type:'highpass',freq:2500,gain:.25});noise(.07,.06,{type:'highpass',freq:3000,gain:.2});},
+  play(){SFX.flip();[523,659,784].forEach((f,k)=>tone(f,.1+k*.07,.25,{type:'triangle',gain:.06}));},
+  coins(){for(let k=0;k<5;k++){tone(2093+k*90,k*.06,.12,{gain:.04});tone(2637+k*70,k*.06+.02,.1,{gain:.03});}},
+  clink(){tone(2093,0,.18,{gain:.05});tone(2637,.07,.22,{gain:.05});},
+  sparkle(){[1568,2093,2637].forEach((f,k)=>tone(f,k*.06,.2,{type:'triangle',gain:.04}));},
+  offer(){tone(1319,0,.6,{type:'triangle',gain:.06});tone(2637,0,.4,{gain:.015});},
+  tick(){noise(0,.03,{type:'highpass',freq:4000,gain:.22});tone(1760,0,.06,{gain:.04});},
+  sting(){[523,784,1047].forEach((f,k)=>tone(f,k*.09,k===2?.5:.14,{type:'sawtooth',gain:.06,cut:2600}));},
+  end(){noise(0,.35,{freq:500,sweep:2000,q:1.2,gain:.14});},
+  // Your turn: a clear rising two-note chime, the one cue meant to be heard from across the room.
+  turn(){tone(880,0,.5,{type:'triangle',gain:.1});tone(1175,.16,.7,{type:'triangle',gain:.1});tone(2350,.16,.4,{gain:.015});},
+  // A short brass-like call: a rising pickup, a held chord, then a bright resolution.
+  fanfare(){const tune=[[392,0,.16],[523,.16,.16],[659,.32,.16],[784,.48,.5],[659,1,.16],[784,1.16,.9]];for(const [f,at,len] of tune){tone(f,at,len,{type:'sawtooth',gain:.1,cut:2400});tone(f/2,at,len,{type:'sawtooth',gain:.05,cut:1200});}for(const f of [523,659,784,1047])tone(f,2.1,1.4,{type:'triangle',gain:.045});},
+};
+function cue(name,...args){if(Array.isArray(window.__sounds))window.__sounds.push(name);if(live())try{SFX[name](...args);}catch{}}
 const SPEAKER=on=>ui(on?'sound-on':'sound-off');
-// Commands whose meaning survives other players' concurrent changes, keyed by the context they depend on.
 // Friends ready up and post offers at the same moment; while that context is unchanged a stale revision is retried instead of asking them to redo it.
 function retryContext(type){if(type==='ready'&&state.phase==='lobby')return `ready:${state.players[state.me]?.ready}`;if(['offer','acceptOffer','declineOffer'].includes(type)&&state.phase==='action')return `trade:${state.turn}:${state.active}:${state.role}`;return null;}
 async function command(type,extra={},retries=5){
@@ -214,13 +241,20 @@ function modalHtml(){if(!modal)return '';let content='';if(modal==='help'||modal
 const fxLayer=()=>document.getElementById('fx')??document.body.appendChild(Object.assign(document.createElement('div'),{id:'fx'}));
 const seatOf=p=>p===state.me?document.querySelector('.hand-cards'):document.querySelectorAll('.sidebar .player')[p];
 const cardOf=(p,r)=>p===state.me&&r?document.querySelectorAll('.hand-cards .resource-card')[R.indexOf(r)]:seatOf(p);
-function fly(html,from,to,delay){setTimeout(()=>{const a=from()?.getBoundingClientRect(),b=to()?.getBoundingClientRect();if(!a?.width||!b?.width)return;const el=Object.assign(document.createElement('div'),{className:'fly',innerHTML:html});fxLayer().append(el);
+function fly(html,from,to,delay,land){setTimeout(()=>{const a=from()?.getBoundingClientRect(),b=to()?.getBoundingClientRect();if(!a?.width||!b?.width)return;const el=Object.assign(document.createElement('div'),{className:'fly',innerHTML:html});fxLayer().append(el);
   const x0=a.left+a.width/2,y0=a.top+a.height/2,x1=b.left+b.width/2,y1=b.top+b.height/2,lift=Math.min(140,Math.hypot(x1-x0,y1-y0)/3);
-  el.animate([{transform:`translate(${x0}px,${y0}px) scale(.5)`,opacity:0},{transform:`translate(${x0}px,${y0-26}px) scale(1.3)`,opacity:1,offset:.2},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-lift}px) scale(1.1)`,opacity:1,offset:.55},{transform:`translate(${x1}px,${y1}px) scale(.7)`,opacity:.85}],{duration:1050,easing:'ease-in-out',fill:'both'}).finished.then(()=>{el.remove();to()?.animate({filter:['brightness(1)','brightness(1.45)','brightness(1)']},{duration:380});});},delay);}
-function playEffects(){if(!state?.board)return;const still=matchMedia('(prefers-reduced-motion: reduce)').matches;for(const f of effects){if(f.played)continue;f.played=true;if(f.kind==='roll')rattle();if(f.kind==='win')fanfare();if(still)continue;
-  if(f.kind==='roll'&&f.gains)f.gains.forEach((g,i)=>{for(let k=0;k<Math.min(g.n,3);k++)fly(icon(g.r,30),()=>document.querySelector(`[data-tile="${g.hex}"]`),()=>cardOf(g.p,g.r),800+i*150+k*110);});
-  if(f.kind==='steal'){const r=f.secret?.r;fly(r?icon(r,30):'<span class="fly-back"></span>',()=>cardOf(f.from,r),()=>cardOf(f.p,r),250);}}}
-function render(preserve=false){if(state?.board)noticeEvents();const fields=preserve?[...app.querySelectorAll('form input,form select')].map(e=>({form:e.form.id,name:e.name,value:e.value,focused:document.activeElement===e})):[];app.innerHTML=(state?(state.phase==='lobby'?lobby():game()):home())+victoryHtml()+modalHtml();for(const f of fields){const el=document.getElementById(f.form)?.elements.namedItem(f.name);if(el){el.value=f.value;if(f.focused)el.focus();}}syncPickers();playEffects();}
+  el.animate([{transform:`translate(${x0}px,${y0}px) scale(.5)`,opacity:0},{transform:`translate(${x0}px,${y0-26}px) scale(1.3)`,opacity:1,offset:.2},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-lift}px) scale(1.1)`,opacity:1,offset:.55},{transform:`translate(${x1}px,${y1}px) scale(.7)`,opacity:.85}],{duration:1050,easing:'ease-in-out',fill:'both'}).finished.then(()=>{el.remove();land?.();to()?.animate({filter:['brightness(1)','brightness(1.45)','brightness(1)']},{duration:380});});},delay);}
+// Each new history entry plays once: its sound for everyone at the table (a few only for the player concerned), and its flying cards.
+function playEffects(){if(!state?.board)return;const still=matchMedia('(prefers-reduced-motion: reduce)').matches,me=state.me;for(const f of effects){if(f.played)continue;f.played=true;
+  const build={road:'road',settlement:'settlement',city:'city'}[f.piece];
+  ({roll:()=>{cue('roll');if(f.dice[0]+f.dice[1]===7&&state.discards?.[me])cue('warn',0);},robber:()=>cue('robber'),steal:()=>{cue('steal');if(f.from===me)setTimeout(()=>cue('sour'),300);},build:()=>build&&cue(build),buy:()=>cue('flip'),play:()=>cue('play'),monopoly:()=>cue('coins'),invention:()=>cue('sparkle'),discard:()=>cue('flip'),trade:()=>cue('clink'),bank:()=>cue('clink'),award:()=>f.p!==null&&cue('sting'),end:()=>cue('end'),win:()=>cue('fanfare'),
+    offer:()=>{if(f.p!==me&&(f.counter?me===state.active:me!==state.active))cue('offer');},respond:()=>{if(f.from===me&&f.answer==='accept')cue('tick');}})[f.kind]?.();
+  if(f.kind==='roll'&&f.gains)f.gains.forEach((g,i)=>{for(let k=0;k<Math.min(g.n,3);k++){const at=800+i*150+k*110;if(still)setTimeout(()=>cue('pop',g.r),at+900);else fly(icon(g.r,30),()=>document.querySelector(`[data-tile="${g.hex}"]`),()=>cardOf(g.p,g.r),at,()=>cue('pop',g.r));}});
+  if(f.kind==='steal'&&!still){const r=f.secret?.r;fly(r?icon(r,30):'<span class="fly-back"></span>',()=>cardOf(f.from,r),()=>cardOf(f.p,r),250);}}
+  // Your turn starting is a change of state rather than an entry: chime once per turn, never for the state a page first loads.
+  const turnKey=`${state.turn}:${state.setupIndex??''}:${state.active}:${state.role}`,mine=state.active===me&&(['preRoll','setupSettlement'].includes(state.phase)||state.phase==='action'&&state.role===2);
+  if(turnCue===null)turnCue=turnKey;else if(mine&&turnCue!==turnKey){turnCue=turnKey;cue('turn');}}
+function render(preserve=false){if(state?.board)noticeEvents();if(state?.phase==='lobby')turnCue='lobby';const fields=preserve?[...app.querySelectorAll('form input,form select')].map(e=>({form:e.form.id,name:e.name,value:e.value,focused:document.activeElement===e})):[];app.innerHTML=(state?(state.phase==='lobby'?lobby():game()):home())+victoryHtml()+modalHtml();for(const f of fields){const el=document.getElementById(f.form)?.elements.namedItem(f.name);if(el){el.value=f.value;if(f.focused)el.focus();}}syncPickers();playEffects();}
 // The clipboard API needs a secure context, which plain http LAN addresses are not; fall back to a selected textarea.
 async function copy(text,message){try{await navigator.clipboard.writeText(text);toast(message);}catch{const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.cssText='position:fixed;opacity:0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();toast(ok?message:`Copy this link: ${text}`);}}
 let inviteOrigin=null;fetch('/api/config').then(r=>r.json()).then(c=>{inviteOrigin=c.inviteOrigin;}).catch(()=>{});

@@ -16,6 +16,7 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 5. Resource animations | done | d581ba4 | Usage after: 5-hour 46%, weekly 22%, context 30% |
 | 6. Win screen and sound | done | bf3c105 | Usage after: 5-hour 50%, weekly 22%, context 32% |
 | 7. Icons | done | 1e9d72f | 12 Font Awesome Free 6.7.2 icons downloaded from jsDelivr with the owner's OK. Usage after: 5-hour 55%, weekly 23%, context 35% |
+| 9. Sound everywhere | done | (next commit) | Added at the owner's request after step 8 |
 | 8. Checks | done | 953c10e, 1e9d72f | `npm test` and `THROTTLE=6 npm test` 33/33 after step 7 |
 
 ## Log
@@ -71,6 +72,13 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Tests that matched on "ready ✓" now match on words / `.lobby-seat.is-ready`.
   - CC BY 4.0 credit: README "Credits" section and a "Credits" entry in How to play. `CLAUDE.md` notes the `#ui-*` symbols.
   - All plan steps are now done. Remaining unchecked: sound by ear, a 1280×720 viewport, an extended-board screenshot.
+
+- 2026-11-03, step 9 (sound everywhere):
+  - `app.js` sound kit: `tone()` and `noise()` primitives into a `master` gain (0.55), `knock()`, and `SFX` with one function per cue (`roll, pop, robber, steal, sour, warn, road, settlement, city, flip, play, coins, clink, sparkle, offer, tick, sting, end, turn, fanfare`). `cue(name,...)` logs to `window.__sounds` (if a test set it to an array) and plays only when unmuted and the AudioContext is running (unlocked on the first `pointerdown`).
+  - `playEffects()` maps each new event kind to its cue. Personal cues: `warn` (a 7 when you must discard), `sour` (you were robbed), `offer` (an offer you can answer), `tick` (someone accepted your offer), `turn` (chime once per turn key `turn:setupIndex:active:role` when your turn starts; `turnCue` is armed in the lobby, and only sets a baseline on a mid-game page load). `fly()` takes a `land` callback so each card's `pop` lands with it; under reduced motion the pops play on timers instead.
+  - Browser tests: victim hears `sour`, onlooker doesn't; the offer bell reaches others but not the poster; the next player hears `turn`, others hear `end`; mute is stored and survives a reload.
+  - Flake seen once: one failure of "discards, player and bank trades…" in 10 throttled full runs, message not captured; 9 later runs passed. If it recurs, capture the output first.
+  - Not verified: how the sounds actually sound (headless tests can't hear). The owner should listen and say which to tune.
 
 ## Handoff prompt
 

@@ -40,6 +40,10 @@ async function playSetup(pages){
   throw new Error('Setup did not finish');
 }
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
+// Sound cues each page played since listening started (the client logs them to window.__sounds; tests cannot hear them).
+const listen=pages=>Promise.all(pages.map(p=>p.eval('window.__sounds=[]')));
+const heard=(page,name)=>page.waitFor(`window.__sounds?.includes(${JSON.stringify(name)})`,{message:`Expected the "${name}" sound`});
+const sounds=page=>page.eval('window.__sounds');
 // The player's own resource cards as shown in their hand.
 const hand=page=>page.eval(`Object.fromEntries([...document.querySelectorAll('.hand-cards .resource-card')].map(c=>[c.querySelector('span').textContent.toLowerCase(),Number(c.querySelector('b').textContent)]))`);
 const fill=(page,form,values)=>page.waitFor(`(()=>{const f=document.getElementById(${JSON.stringify(form)});if(!f)return false;for(const [k,v] of Object.entries(${JSON.stringify(values)})){const e=f.elements.namedItem(k);e.value=String(v);e.dispatchEvent(new Event('change',{bubbles:true}));}return true;})()`);
@@ -180,9 +184,10 @@ test('browser: discards, player and bank trades, and every development card',{sk
     // A lone victim is robbed at once, without a pick: the card flies face-down for onlookers and face-up for the victim.
     const lone=await stage(server,pages,(g,{setHand})=>{const h=g.board.hexes.find(h=>h.id!==g.robber&&h.vertices.every(v=>[undefined,a].includes(g.board.vertices[v].building?.owner))&&h.vertices.some(v=>!g.board.vertices[v].building));
       g.board.vertices[h.vertices.find(v=>!g.board.vertices[v].building)].building={owner:b,kind:'settlement'};setHand(b,{ore:1});g.phase='robber';g.resumePhase='action';return h.id;});
-    await A.click(`[data-hex="${lone}"]`);
+    await listen([A,B,C]);await A.click(`[data-hex="${lone}"]`);
     await C.waitFor(`document.querySelector('#fx .fly .fly-back')`,{message:'Onlookers did not see a face-down card fly'});
     await B.waitFor(`document.querySelector('#fx .fly use[href="#ico-ore"]')`,{message:'The victim did not see their ore fly away'});
+    for(const page of [A,B,C])await heard(page,'robber');await heard(B,'sour');await heard(C,'steal');assert.ok(!(await sounds(C)).includes('sour'),'only the victim hears the sour note');
     await A.waitFor(`document.querySelector('[data-command="end"]')`);assert.ok(!await A.has('[data-victim]'),'no pick for a single victim');
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('stole a resource from Seat ${b}')`);
     await B.waitFor(`document.querySelector('.log-list .log-res[title="1 ore"]')`,{message:'The victim’s history does not name the stolen ore'});
@@ -198,9 +203,10 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.ok(!await B.has('[data-mode="trade"]'),'only the current player can start a trade');
     assert.ok(await B.eval(`document.querySelector('[data-ui="build-bar"] [data-mode="road"]').disabled`),'the build bar waits for your turn');
     assert.deepEqual(await A.eval(`['road','buyCard'].map(k=>document.querySelector('[data-ui="build-bar"] [data-mode="'+k+'"],[data-ui="build-bar"] [data-command="'+k+'"]').disabled)`),[true,false],'the current player can buy what they can afford, and only that');
-    await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
+    await listen([A,B,C]);await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
     for(const page of [B,C])await page.waitFor(`document.querySelector('[data-ui="trade-panel"] .offer [data-counter]')`,{message:'The offer did not open the trade panel for the other players'});
     // Closing the panel hides the offer behind a launcher badge until it is reopened.
+    await heard(B,'offer');await heard(C,'offer');assert.ok(!(await sounds(A)).includes('offer'),'no bell for your own offer');
     await B.click('[data-ui="trade-close"]');await B.waitFor(`!document.querySelector('.offer')`);assert.match(await B.text('[data-ui="trade-launcher"]'),/Offers\s*1/);
     await B.click('[data-ui="trade-show"]');await B.waitFor(`document.querySelector('.offer [data-accept]')`);
     await C.click('.offer [data-counter]');await fill(C,'trade',{'give-wool':1,'want-wood':1});
@@ -218,6 +224,10 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await B.waitFor(`[...document.querySelectorAll('.resource-card b')].map(b=>b.textContent).join()==='1,1,2,0,0'`,{message:'Confirmed trade did not update the other hand'});
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('Seat ${a} traded with Seat ${b}')`);
     await openPanel(A,'trade','trade');await fill(A,'trade',{'want-ore':1});await submit(A,'trade');await toastIncludes(A,'gifts are not allowed');
+    // The mute toggle is remembered per browser and survives a reload.
+    await A.click('[data-ui="mute"]');await A.waitFor(`document.querySelector('[data-ui="mute"]').getAttribute('aria-pressed')==='false'&&localStorage.getItem('island-muted')==='1'`,{message:'Mute did not switch sound off'});
+    await A.eval('location.reload()');await A.waitFor(`document.querySelector('[data-ui="mute"]')?.getAttribute('aria-pressed')==='false'`,{message:'Mute was not remembered'});
+    await A.click('[data-ui="mute"]');await A.waitFor(`localStorage.getItem('island-muted')==='0'`);
 
     await openPanel(A,'bank','bank');const ratio=Number((await A.text('#bank [data-ratio="wood"] .ratio')).match(/\d+/)[0]);
     await fill(A,'bank',{give:'wood',want:'ore'});await submit(A,'bank');
@@ -230,10 +240,10 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await clickCard(A,'Monopoly');await A.click('[data-monopoly="wool"]');
     await A.waitFor(`document.querySelectorAll('.resource-card b')[2].textContent==='5'`,{message:'Monopoly did not collect wool'});
     assert.equal((await hand(B)).wool,0);assert.equal((await hand(C)).wool,0);
-    await A.click('[data-command="end"]');
+    await listen([A,B,C]);await A.click('[data-command="end"]');
 
     // Invention before rolling takes two resources from the supply.
-    assert.equal(await waitActive(pages,A),B);assert.ok(await B.has('.table-dice.roll-me')&&!await A.has('.roll-me'),'only the roller gets the dice button');const before=await hand(B);
+    assert.equal(await waitActive(pages,A),B);await heard(B,'turn');await heard(C,'end');assert.ok(!(await sounds(C)).includes('turn'),'only the next player hears their turn chime');assert.ok(await B.has('.table-dice.roll-me')&&!await A.has('.roll-me'),'only the roller gets the dice button');const before=await hand(B);
     await clickCard(B,'Invention');await fill(B,'invention',{'take-ore':1,'take-wheat':1});await submit(B,'invention');await B.waitFor(`!document.querySelector('#invention')`);
     assert.deepEqual(await hand(B),{...before,ore:before.ore+1,wheat:before.wheat+1});
     await playTurn(pages,B);

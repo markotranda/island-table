@@ -92,6 +92,10 @@ The same events drive the animations in step 5 (production event names the hexes
 - Add ~12 icons (arrows, close, check, swap/exchange, volume on/off, trophy, dice, etc.) to `scripts/icons.mjs`, regenerate with `node scripts/icons.mjs`.
 - Replace text arrows in the UI; add CC BY 4.0 attribution to README and How to play.
 
+### Step 9 — Sound everywhere (added 2026-11-03 at the owner's request)
+- Synthesized cues (Web Audio, no files) through a quiet master gain, triggered by new history entries via `playEffects()`: dice rattle + settle, a pop per resource card landing (pitched by resource), robber thud, steal swish (+ sour note for the victim), discard warning for those who must discard, wooden knocks for road/settlement/city, card flip for buying/discarding, flourish for playing a card, coins for Monopoly, sparkle for Invention, clink for trades, bell when an offer reaches you, tick when someone accepts your offer, brass sting for awards, whoosh for ending a turn, chime when your turn starts, fanfare for a win.
+- Mute toggle unchanged. Browser tests check routing through `window.__sounds`.
+
 ### Step 8 — Checks
 - Full `npm test`; `THROTTLE=6 npm test` for timing flakes.
 - `node scripts/review-screens.mjs <dir>` (add screens for trade panel, build bar, dice, win overlay if missing) and send screenshots to the owner.
