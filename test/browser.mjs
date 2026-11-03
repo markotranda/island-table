@@ -37,6 +37,7 @@ export async function launch(){
     const page={errors,
       async eval(expression){const r=await cmd('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;},
       async goto(url){const loaded=new Promise(r=>loads.push(r));await cmd('Page.navigate',{url});await loaded;},
+      resize:(width,height)=>cmd('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768}),
       async reload(){const loaded=new Promise(r=>loads.push(r));await cmd('Page.reload');await loaded;},
       async waitFor(expression,{timeout=10000,message}={}){const end=Date.now()+timeout;let last;while(Date.now()<end){try{last=await page.eval(expression);if(last)return last;}catch{}await wait(50);}throw new Error(message||`Timed out waiting for ${expression}`);},
       has:selector=>page.eval(`!!document.querySelector(${JSON.stringify(selector)})`),

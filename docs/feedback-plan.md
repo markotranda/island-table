@@ -100,3 +100,34 @@ The same events drive the animations in step 5 (production event names the hexes
 - Full `npm test`; `THROTTLE=6 npm test` for timing flakes.
 - `node scripts/review-screens.mjs <dir>` (add screens for trade panel, build bar, dice, win overlay if missing) and send screenshots to the owner.
 - Update `CLAUDE.md` if commands, hooks or architecture notes changed; add a section to `docs/project-log.md`.
+
+---
+
+# Round 2: feedback from the second game
+
+Agreed with the owner on 2026-11-03. Same working rules as round 1 (one commit per step, tests passing, `progress.md` updated, usage checked, park above 85%). Progress is in `progress.md` under "Round 2".
+
+## The feedback and what was decided
+
+| # | Feedback | Decision |
+|---|---|---|
+| 1 | Starting resources don't fly out | The setup `gain` event records the source hexes (`gains:[{hex,r,n}]` like a roll); the client glows those tiles and flies cards to the player, same as production. Old saves don't animate |
+| 2 | Build cards only grey out; show what I have / miss | Each cost icon shows a green check (have) or a red dot (missing), also off-turn; tooltip names what's missing ("Missing: 1 brick, 1 wool") |
+| 3 | Same dev cards should stack | One card per type with a count badge top-right like resource cards; "n new" note when some were bought this turn; clicking plays one playable card of that type |
+| 4 | Tooltips everywhere | One styled tooltip system (`data-tip`, short delay, long-press on touch) replacing `title` popups. Contents: dev cards (what they do, in hand and history), roads (hover highlights that player's **longest route** and shows its length; engine/view exposes the route's edges), settlements/cities (owner, adjacent numbers/resources), hexes (resource, number, odds, robber), ports, sidebar player cards, award tiles (holder, what beats it), build cards, resource cards (count, your trade rate), dice, header buttons |
+| 5 | Feedback when another player places something | 3-second pulsing ring in the player's colour on a new road/settlement/city by someone else, and on the robber hex when it moves. From the event tracker, not replayed on reload |
+| 6 | Build cards show "left" at the bottom | Corner badge top-right like resource cards |
+| 7 | Saved seats pile up in `localStorage` | Silent cleanup: drop a seat when the server says the room is gone or the seat is invalid; drop finished games after 7 days; cap at 20 most recent |
+| 8 | White background when scrolling the ready page | Background painted on `html`, covers the full page |
+| 9 | Game page scrolls | Desktop/tablet (≥851px): game page locked to the viewport, only history (and the trade panel internally) scrolls; check short windows (~700px tall) and the compact tier. Phones keep page scroll (stacked layout) |
+
+## Steps
+
+1. **Page fixes (8, 9).** CSS; browser test asserts no document scroll at desktop size.
+2. **Saved seats (7).** `app.js` `saved` gets `at` timestamps and `finished`; pruning on load and on 404/401 from join/events. Browser test: a stale seat for a missing room disappears.
+3. **Build cards (2, 6).** `buildBar()`: corner badge, have/missing marks, reason tooltip. Browser test checks marks.
+4. **Stacked dev cards (3).** `hand()` groups `me.cards` by type. Keep `data-card` (id of the card to play).
+5. **Setup flights (1).** Engine `gain` event gets `gains`; `playEffects()` handles `gain` like `roll`. Engine test for the event shape.
+6. **Placement highlight (5).** `board()` draws `.placed` rings for live `build`/`robber` effects from other players (needs vertex/edge in the build event; add if missing).
+7. **Tooltips (4).** Tooltip layer + contents above; engine `routePath(g,p)` returning edge ids for the longest route, exposed in `view()`. `RULES.md` unaffected unless the route traversal changes.
+8. **Checks.** `npm test`, `THROTTLE=6 npm test`, review screenshots.

@@ -112,6 +112,7 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     await host.waitFor(`document.querySelector('.lobby-top .pill')?.textContent.startsWith('3 / 4')`,{message:'Lobby did not show joined players live'});
     assert.match(await host.text(),/Ana[\s\S]*Ben/);
     assert.ok(await host.eval(`document.querySelector('[data-command="start"]').disabled`),'start waits for everyone to be ready');
+    assert.match(await host.eval('getComputedStyle(document.documentElement).backgroundImage'),/gradient/,'the wood covers the whole page, not just the body');
     assert.equal(await host.text('[data-ui="start-hint"]'),'Waiting for you, Ana and Ben to get ready.');
     // The recovery key is offered in the lobby; Ben uses it on a new device mid-game below.
     await ben.click('[data-ui="seat"]');await ben.click('[data-ui="copy-seat"]');const key=await ben.waitFor('window.__copied.at(-1)');await ben.click('[data-ui="close"]');
@@ -126,6 +127,9 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     assert.match(await phaseLabel(host),/FOUNDATIONS/);
 
     let active=await playSetup(pages);
+    // The game is one screen on desktop, down to short laptop windows: only panels inside it scroll.
+    for(const [w,h] of [[1280,900],[1000,600]]){await host.resize(w,h);await host.waitFor(`document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth`,{message:`game page scrolls at ${w}x${h}`});}
+    await host.resize(1280,900);
     for(const page of pages)await page.waitFor(`document.querySelectorAll('.building').length===6&&document.querySelectorAll('.road').length===6`,{message:'Board did not update live'});
     for(let turn=0;turn<3;turn++){
       const label=await phaseLabel(active);await playTurn(pages,active);

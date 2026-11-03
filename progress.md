@@ -85,3 +85,21 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 ## Handoff prompt
 
 (Empty until work is parked.)
+
+# Round 2
+
+Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
+
+| Step | State | Commit | Notes |
+|---|---|---|---|
+| 0. Plan written | done | | |
+| 1. Page fixes | next | | |
+| 2. Saved seats | | | |
+| 3. Build cards | | | |
+| 4. Stacked dev cards | | | |
+| 5. Setup flights | | | |
+| 6. Placement highlight | | | |
+| 7. Tooltips | | | |
+| 8. Checks | | | |
+
+## Round 2 log
