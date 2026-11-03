@@ -183,23 +183,26 @@ test('browser: discards, player and bank trades, and every development card',{sk
     assert.equal(await scoreOf(C,c),await scoreOf(A,c)+1,'a hidden Victory Point counts only on its owner’s screen');
     assert.ok(await C.eval(`${cardButton('Victory Point')}.disabled`),'Victory Point cards cannot be played');
 
-    // Two players post offers at the same moment: both reach the active player live, and cancelling one must leave the other.
-    await openPanel(B,'trade','trade');await fill(B,'trade',{'give-brick':1,'want-wood':1});
-    await openPanel(C,'trade','trade');await fill(C,'trade',{'give-wool':1,'want-ore':1});
-    // Submit both forms in the same instant through the app's own handler: a mouse click can miss when the other offer arrives and shifts the layout mid-click.
-    await Promise.all([B,C].map(page=>page.eval(`document.getElementById('trade').requestSubmit()`)));
+    // Only the current player starts trades. B accepts while C counters at the same moment: both reach A live,
+    // A declines the counter and then chooses B among the players who accepted.
+    assert.ok(!await B.has('[data-mode="trade"]'),'only the current player can start a trade');
+    await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');
+    for(const page of [B,C])await page.waitFor(`document.querySelector('.offer [data-counter]')`,{message:'The offer did not reach the other players'});
+    await C.click('.offer [data-counter]');await fill(C,'trade',{'give-wool':1,'want-wood':1});
+    // Answer through the app's own handlers in the same instant: a mouse click can miss when the other answer arrives and shifts the layout mid-click.
+    await Promise.all([B.eval(`document.querySelector('.offer [data-accept]').click()`),C.eval(`document.getElementById('trade').requestSubmit()`)]);
     for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);
-    await A.waitFor(`document.querySelectorAll('.offer').length===2`,{message:'Offers did not reach the active player'});
-    // Arrival order is up to the race, so cancel C's offer by its text rather than its position.
-    const cancelC=await A.eval(`[...document.querySelectorAll('.offer')].find(o=>o.textContent.includes('Seat ${c} offers')).querySelector('[data-cancel]').dataset.cancel`);
-    await A.click(`[data-cancel="${cancelC}"]`);await A.waitFor(`document.querySelectorAll('.offer').length<2`);await pause(300);
-    assert.equal(await A.eval(`document.querySelectorAll('.offer').length`),1,'cancelling one offer leaves the others');
-    assert.match(await A.text('.offer'),new RegExp(`Seat ${b} offers 1 brick`));
-    await A.click('.offer [data-accept]');await A.waitFor(`!document.querySelector('.offer')`);
+    await A.waitFor(`document.querySelector('.offer [data-confirm]')&&document.querySelectorAll('.offer').length===2`,{message:'The accept and the counteroffer did not both reach the active player'});
+    assert.equal((await hand(B)).brick,2,'accepting alone moves no cards');
+    // Arrival order is up to the race, so find C's counteroffer by its text rather than its position.
+    const declineC=await A.eval(`[...document.querySelectorAll('.offer')].find(o=>o.textContent.includes('Seat ${c} counters')).querySelector('[data-decline]').dataset.decline`);
+    await A.click(`[data-decline="${declineC}"]`);await A.waitFor(`document.querySelectorAll('.offer').length===1`);
+    assert.match(await A.text('.offer'),new RegExp(`Seat ${a} offers 1 wood[\\s\\S]*Accepted: Seat ${b}`));
+    await A.click(`[data-confirm][data-player="${b}"]`);await A.waitFor(`!document.querySelector('.offer')`);
     assert.deepEqual(await hand(A),{wood:4,brick:1,wool:1,wheat:2,ore:2});
-    await B.waitFor(`[...document.querySelectorAll('.resource-card b')].map(b=>b.textContent).join()==='1,1,2,0,0'`,{message:'Accepted trade did not update the other hand'});
-    await C.waitFor(`document.querySelector('.log-list').textContent.includes('traded with')`);
-    await openPanel(B,'trade','trade');await fill(B,'trade',{'want-ore':1});await submit(B,'trade');await toastIncludes(B,'gifts are not allowed');
+    await B.waitFor(`[...document.querySelectorAll('.resource-card b')].map(b=>b.textContent).join()==='1,1,2,0,0'`,{message:'Confirmed trade did not update the other hand'});
+    await C.waitFor(`document.querySelector('.log-list').textContent.includes('Seat ${a} traded with Seat ${b}')`);
+    await openPanel(A,'trade','trade');await fill(A,'trade',{'want-ore':1});await submit(A,'trade');await toastIncludes(A,'gifts are not allowed');
 
     await openPanel(A,'bank','bank');const ratio=Number((await A.text('#bank [data-ratio="wood"] .ratio')).match(/\d+/)[0]);
     await fill(A,'bank',{give:'wood',want:'ore'});await submit(A,'bank');

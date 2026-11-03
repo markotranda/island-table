@@ -35,11 +35,37 @@ test('seven requires exact discards before moving robber and hides stolen identi
   assert.equal(g.phase,'robber');assert.throws(()=>action(g,p,{type:'robber',hex:g.robber}),/different/);const target=g.board.hexes.find(h=>h.id!==g.robber&&h.vertices.some(v=>{const owner=g.board.vertices[v].building?.owner;return owner>=0&&owner!==p;}));g=action(g,p,{type:'robber',hex:target.id});if(g.phase==='steal')g=action(g,p,{type:'steal',player:g.victims[0]});assert.equal(g.phase,'action');conserved(g);
 });
 test('domestic trades reject gifts and same resources, exchange atomically, and clear offers',()=>{
-  let g=clear(fixture());give(g,0,'wood',2);give(g,1,'ore',1);assert.throws(()=>action(g,0,{type:'offer',give:{wood:1},want:{}}),/gifts/);assert.throws(()=>action(g,0,{type:'offer',give:{wood:2},want:{wood:1}}),/different/);
-  g=action(g,0,{type:'offer',offerId:'trade001',give:{wood:2},want:{ore:1}});g=action(g,1,{type:'acceptOffer',offerId:'trade001'});assert.equal(g.players[1].hand.wood,2);assert.equal(g.players[0].hand.ore,1);assert.equal(g.offers.length,0);conserved(g);
-  give(g,1,'ore',1);give(g,2,'wool',1);g=action(g,1,{type:'offer',offerId:'trade002',give:{ore:1},want:{wood:1}});g=action(g,2,{type:'offer',offerId:'trade003',give:{wool:1},want:{wood:1}});
-  g=action(g,0,{type:'cancelOffer',offerId:'trade003'});assert.deepEqual(g.offers.map(o=>o.id),['trade002'],'cancelling one offer keeps the others');
+  let g=clear(fixture());give(g,0,'wood',2);give(g,1,'ore',1);give(g,2,'ore',1);assert.throws(()=>action(g,0,{type:'offer',give:{wood:1},want:{}}),/gifts/);assert.throws(()=>action(g,0,{type:'offer',give:{wood:2},want:{wood:1}}),/different/);
+  g=action(g,0,{type:'offer',offerId:'trade001',give:{wood:2},want:{ore:1}});g=action(g,1,{type:'acceptOffer',offerId:'trade001'});assert.equal(g.players[1].hand.wood,0,'accepting only marks willingness');
+  g=action(g,2,{type:'acceptOffer',offerId:'trade001'});assert.deepEqual(g.offers[0].accepted,[1,2]);assert.throws(()=>action(g,0,{type:'confirmOffer',offerId:'trade001',player:3}),/not accepted/);assert.throws(()=>action(g,1,{type:'confirmOffer',offerId:'trade001',player:2}),/not accepted/);
+  g=action(g,2,{type:'declineOffer',offerId:'trade001'});assert.deepEqual([g.offers[0].accepted,g.offers[0].declined],[[1],[2]],'an accept can be withdrawn');assert.equal(g.events.at(-1).answer,'withdraw');
+  g=action(g,0,{type:'confirmOffer',offerId:'trade001',player:1});assert.equal(g.players[1].hand.wood,2);assert.equal(g.players[0].hand.ore,1);assert.equal(g.offers.length,0);conserved(g);
+  assert.deepEqual(g.events.at(-1),{id:g.events.at(-1).id,turn:g.turn,kind:'trade',p:0,with:1,give:{...emptyHand(),wood:2},want:{...emptyHand(),ore:1}});
+  give(g,0,'wheat',1);give(g,1,'ore',1);give(g,2,'wool',1);assert.throws(()=>action(g,1,{type:'offer',offerId:'own',give:{ore:1},want:{wood:1}}),/counter/,'only the current player starts trades');
+  g=action(g,0,{type:'offer',offerId:'trade002',give:{wheat:1},want:{ore:1}});g=action(g,1,{type:'offer',offerId:'counter1',counterTo:'trade002',give:{ore:1},want:{ore:0,wheat:1,brick:0}});g=action(g,2,{type:'offer',offerId:'counter2',counterTo:'trade002',give:{wool:1},want:{wheat:1}});
+  assert.deepEqual(g.offers.map(o=>[o.id,o.to,o.counterTo]),[['trade002',null,undefined],['counter1',0,'trade002'],['counter2',0,'trade002']]);
+  assert.throws(()=>action(g,2,{type:'acceptOffer',offerId:'counter1'}),/cannot answer/,'counters are for the current player only');
+  g=action(g,0,{type:'declineOffer',offerId:'counter2'});assert.deepEqual(g.offers.map(o=>o.id),['trade002','counter1'],'declining one counter keeps the others');
   assert.throws(()=>action(g,2,{type:'cancelOffer',offerId:'trade002'}),/cannot cancel/);
+  g=action(g,0,{type:'acceptOffer',offerId:'counter1'});assert.equal(g.players[0].hand.ore,2,'the current player completes a counter by accepting it');assert.equal(g.players[1].hand.wheat,1);assert.equal(g.offers.length,0);conserved(g);
+  g=action(g,0,{type:'offer',offerId:'trade003',give:{ore:1},want:{wool:1}});assert.throws(()=>action(g,1,{type:'acceptOffer',offerId:'trade003'}),/requested resources/);
+  g=action(g,2,{type:'acceptOffer',offerId:'trade003'});g.players[2].hand.wool--;g.bank.wool++;assert.throws(()=>action(g,0,{type:'confirmOffer',offerId:'trade003',player:2}),/no longer/,'resources are checked again on confirm');
+});
+test('robber steals at once from a single victim and only thief and victim learn the resource',()=>{
+  let g=clear(fixture());g.phase='robber';g.resumePhase='action';const h=g.board.hexes.find(h=>h.id!==g.robber);g.board.vertices[h.vertices[0]].building={owner:1,kind:'settlement'};give(g,1,'brick',1);
+  g=action(g,0,{type:'robber',hex:h.id});assert.equal(g.phase,'action');assert.equal(g.players[0].hand.brick,1);conserved(g);
+  const e=g.events.at(-1);assert.deepEqual([e.kind,e.p,e.from,e.secret.r],['steal',0,1,'brick']);
+  assert.equal(view(g,0).events.at(-1).secret.r,'brick');assert.equal(view(g,1).events.at(-1).secret.r,'brick');assert.equal(view(g,2).events.at(-1).secret,undefined);
+  g.phase='robber';g.resumePhase='action';const k=g.board.hexes.find(x=>x.id!==g.robber&&x.vertices.length);g.board.vertices[k.vertices[0]].building={owner:1,kind:'settlement'};g.board.vertices[k.vertices[3]].building={owner:2,kind:'settlement'};give(g,1,'wool',1);give(g,2,'wool',1);
+  g=action(g,0,{type:'robber',hex:k.id});assert.equal(g.phase,'steal','two victims still need a choice');assert.deepEqual(g.victims.toSorted(),[1,2]);
+});
+test('history records production per hex, purchases privately, and awards',()=>{
+  let g=clear(fixture());g.phase='preRoll';const h=g.board.hexes.find(h=>h.resource==='wood'&&h.id!==g.robber);g.board.hexes.forEach(x=>{if(x.number===8)x.number=3;});h.number=8;g.board.vertices[h.vertices[0]].building={owner:1,kind:'city'};g.board.vertices[h.vertices[2]].building={owner:2,kind:'settlement'};
+  g=action(g,0,{type:'roll'},(()=>{let i=0;return ()=>[3,3][i++];})());const roll=g.events.at(-1);assert.deepEqual(roll.dice,[4,4]);assert.deepEqual(roll.gains.toSorted((a,b)=>a.p-b.p),[{p:1,hex:h.id,r:'wood',n:2},{p:2,hex:h.id,r:'wood',n:1}]);assert.deepEqual(roll.short,[]);
+  give(g,0,'ore',1);give(g,0,'wool',1);give(g,0,'wheat',1);g=action(g,0,{type:'buyCard'});const buy=g.events.at(-1);assert.equal(buy.kind,'buy');assert.ok(buy.secret.card);assert.deepEqual(buy.secret.to,[0]);
+  assert.equal(view(g,1).events.at(-1).secret,undefined);assert.ok(view(g,1).events.every(e=>!e.secret),'no other seat sees any secret');
+  g.players[0].knights=2;g.players[0].cards=[{id:'k',type:'knight',bought:-1}];g=action(g,0,{type:'playCard',card:'k'});assert.ok(g.events.some(e=>e.kind==='award'&&e.award==='army'&&e.p===0&&e.from===null));
+  assert.ok(g.events.every((e,i)=>!i||e.id===g.events[i-1].id+1),'event ids increase by one');
 });
 test('bank rates follow owned ports and bank shortage rolls back payment',()=>{
   let g=clear(fixture());const port=g.board.ports.find(p=>p.resource==='wood');g.board.vertices[port.vertices[0]].building={owner:0,kind:'settlement'};assert.equal(tradeRatio(g,0,'wood'),2);give(g,0,'wood',4);g=action(g,0,{type:'bank',give:'wood',want:'ore'});assert.equal(g.players[0].hand.ore,1);conserved(g);g.bank.ore=0;const before=structuredClone(g);assert.throws(()=>action(g,0,{type:'bank',give:'wood',want:'ore'}),/supply/);assert.deepEqual(g,before);

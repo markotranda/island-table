@@ -48,16 +48,19 @@ try{
     g.players[0].knights=3;g.awards.army=0;g.players[2].knights=1;g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);
     const target=g.board.hexes.filter(h=>h.number&&[6,8,5,9].includes(h.number))[0];if(target)g.robber=target.id;
     g.turn=14;g.active=0;g.primary=0;g.phase='action';g.dice=[4,5];g.offers=[];
-    for(const t of ['Tobias built a settlement.','Ines traded with the supply.','Jun moved the robber.','Jun stole one resource from Mara.','Mara played a Knight.','Mara rolled 9.'])g.events.push({turn:g.turn,text:t});
+    const h9=g.board.hexes.filter(h=>h.number===9),e=(kind,data)=>g.events.push({id:(g.eventSeq=(g.eventSeq??g.events.length)+1),turn:g.turn,kind,...data});
+    e('build',{p:1,piece:'settlement'});e('bank',{p:2,give:{wheat:4},want:{ore:1}});e('end',{p:3});e('roll',{p:3,dice:[3,4]});e('robber',{p:3,hex:target?.id??0});e('steal',{p:3,from:0,secret:{to:[3,0],r:'wool'}});e('end',{p:3});
+    e('play',{p:0,card:'knight'});e('roll',{p:0,dice:[4,5],gains:h9.map((h,i)=>({p:i%2?2:0,hex:h.id,r:h.resource,n:1})),short:[],blocked:null});
     viewer=g.active;});
   const me=pages[viewer];
   // Awards are recalculated when a turn begins; end the active turn and back again is overkill, so screenshot the busy board as is.
   await shot(me,'04-midgame-board');
-  // Another player posts a trade offer; the active player sees it, and opens the trade panel.
-  const other=pages[(viewer+1)%4];
-  await other.click('[data-mode="trade"]');await other.waitFor(`document.getElementById('trade')`);
-  await other.eval(`(()=>{const f=document.getElementById('trade');for(const [k,v] of Object.entries({'give-brick':1,'want-ore':1})){const e=f.elements.namedItem(k);e.value=String(v);e.dispatchEvent(new Event('change',{bubbles:true}));}f.requestSubmit();})()`);
-  await me.waitFor(`document.querySelector('.offer')`);await shot(me,'05-trade-offer');
+  // The active player posts an offer; one player accepts and another counters, then the active player opens the trade panel.
+  const post=(page,values,counter)=>page.eval(`(async()=>{document.querySelector(${JSON.stringify(counter?'.offer [data-counter]':'[data-mode="trade"]')}).click();const f=document.getElementById('trade');for(const [k,v] of Object.entries(${JSON.stringify(values)})){const e=f.elements.namedItem(k);e.value=String(v);e.dispatchEvent(new Event('change',{bubbles:true}));}f.requestSubmit();})()`);
+  await post(me,{'give-wool':1,'want-brick':1});const accepter=pages[(viewer+1)%4],counterer=pages[(viewer+3)%4];
+  await accepter.waitFor(`document.querySelector('.offer [data-accept]')`);await accepter.click('.offer [data-accept]');await me.waitFor(`document.querySelector('.offer [data-confirm]')`);
+  await counterer.waitFor(`document.querySelector('.offer [data-counter]')`);await post(counterer,{'give-brick':1,'want-wool':2},true);
+  await me.waitFor(`document.querySelectorAll('.offer').length===2`);await shot(me,'05-trade-offer');
   await me.click('[data-mode="trade"]');await me.waitFor(`document.getElementById('trade')`);for(const k of ['give-wool','give-wool','want-brick'])await me.click(`[data-pick="${k}"][data-step="1"]`);await shot(me,'06-trade-panel');
   await me.click('[data-mode="trade"]');await pause(300);
   await me.click('[data-mode="bank"]').catch(()=>{});await me.waitFor(`document.getElementById('bank')`);await me.eval(`(()=>{const b=document.querySelector('#bank [data-choice="give"] [data-choose]:not(:disabled)');b?.click();document.querySelector('#bank [data-choice="want"] [data-choose="brick"]').click();return true;})()`);await shot(me,'07-bank-panel');
