@@ -21,6 +21,8 @@ Gameplay source of truth: the two user-supplied 2025 PDFs. They are not bundled 
 The source booklets are concise. The following conventions make incomplete edge cases executable:
 
 - Players choose a map, not a player count. Base (19 hexes, 19-card supply, 25-card deck) seats 2-4; Extended (30 hexes, 24-card supply, 34-card deck) seats 2-6. The host starts once at least two players have joined and all are ready, and the number of players is fixed at that moment.
+- The host sets the table in the lobby and can change it until setting sail: map, island setup, points to win (5-20, default 10 as in the rulebook), the discard limit (a 7 makes players holding more than 7-12 cards discard half, default 7) and the friendly robber. Any change asks the other players to ready up again. A rematch keeps the settings.
+- Friendly robber (house rule, off by default): a player whose public score is 2 points or fewer cannot be robbed. The robber may still be moved next to them and still blocks the hex; they are simply not eligible victims.
 - Neither rulebook covers two players. A two-player game uses the normal rules unchanged, with no special variant.
 - On the Extended map, paired-player turns apply only with 5 or 6 players; with 2-4, turns are classic. In a fixed Extended setup with 2-4 players, the unused starting positions stay empty; the rulebook's neutral blockers apply only to the five-player game.
 - Tied starting dice rolls are rerolled among the tied players.

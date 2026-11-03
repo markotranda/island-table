@@ -358,3 +358,8 @@
 /* Longest route: hovering a road dims every other road and lights the owner's longest route. */
 .board.route-mode .road{opacity:.35;transition:opacity .15s}.board.route-mode .road.route-lit{opacity:1;filter:drop-shadow(0 0 3px #fff6c8) drop-shadow(0 0 6px #fff6c8)}
 .dev-cards .dev-card:hover:not(:disabled){background:#38605a linear-gradient(#ffffff17,#0000)}.dev-cards .dev-card.vp:hover:not(:disabled){background:#8a6a36 linear-gradient(#ffffff17,#0000)}
+/* Lobby settings: the host's choices in a two-column grid; other players see the values. */
+.table-settings{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin:4px 0 10px}
+.table-settings label{margin-top:10px}.table-settings select{width:100%}
+.setting-value{display:block;padding:8px 0 2px;font-size:14px;color:#2f2a20}
+@media(max-width:620px){.table-settings{grid-template-columns:1fr}}

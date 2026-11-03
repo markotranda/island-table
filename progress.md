@@ -145,3 +145,24 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Not done from the step 7 list: a tip on the sidebar player card as a whole (its stats already have tips) and on the robber pawn.
 
 - 2026-11-03, step 8: `npm test` and `THROTTLE=6 npm test` both 35/35. Review screenshots regenerated (now also `13-road-tip`, `14-card-tip`). All round 2 steps done; the owner should play-test. Not checked: touch long-press on a real phone, and the pulse/glow at the extended 30-hex board.
+
+# Round 3
+
+Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
+
+| Step | State | Commit | Notes |
+|---|---|---|---|
+| 0. Plan written | done | with step 1 | |
+| 1. Lobby settings | done | see log | |
+| 2. Starting roll | in progress | | |
+| 3. Discard warning and window | pending | | |
+| 4. Client fixes | pending | | |
+| 5. Checks | pending | | |
+
+## Round 3 log
+
+- 2026-11-03, step 1 (lobby settings):
+  - Engine: `goal` (points to win, default 10), `limit` (discard when holding more than this, default 7), `friendly` (friendly robber) on the game; `upgrade()` fills them for old saves; `LIMITS` holds the ranges (5-20, 7-12). New `settings` command (host, lobby only) takes any of `map, setup, goal, limit, friendly`; refuses a map with fewer seats than players; a real change un-readies everyone except the host. Win check uses `g.goal`, discards use `g.limit`, friendly robber drops victims with public score ≤ 2. Rematch keeps the settings.
+  - Client: create form asks only for a name. `tableSettings()` in the lobby: host gets selects (`data-setting="map|setup|goal|limit|friendly"`), others read-only values (`data-value=…`); the block carries the current values as `data-map`, `data-goal`… so tests can wait for the server's confirmation. `settings` is auto-retried on 409 (`retryContext`). Table line, help, discard texts use the settings.
+  - Tests: engine test for validation, un-ready, discard limit, goal, friendly robber, rematch; browser test: host changes points to win, guest sees it and is un-readied, table line says "First to 12 points". `createTable()` now picks map/setup in the lobby.
+  - The "discards, player and bank trades" browser test failed once in a full run (passed 6/6 alone and the next full run). Still the known rare flake; message not captured.

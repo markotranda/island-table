@@ -131,3 +131,29 @@ Agreed with the owner on 2026-11-03. Same working rules as round 1 (one commit p
 6. **Placement highlight (5).** `board()` draws `.placed` rings for live `build`/`robber` effects from other players (needs vertex/edge in the build event; add if missing).
 7. **Tooltips (4).** Tooltip layer + contents above; engine `routePath(g,p)` returning edge ids for the longest route, exposed in `view()`. `RULES.md` unaffected unless the route traversal changes.
 8. **Checks.** `npm test`, `THROTTLE=6 npm test`, review screenshots.
+
+---
+
+# Round 3: feedback from the third game
+
+Agreed with the owner on 2026-11-03. Same working rules as round 1. Progress is in `progress.md` under "Round 3".
+
+## The feedback and what was decided
+
+| # | Feedback | Decision |
+|---|---|---|
+| 1 | Settings are fixed when the room is created; want to change them after inviting, and more options (points to win) | The create form only asks for a name. The lobby shows the settings; the host changes them with a `settings` command (map, island setup, points to win 5–20, discard limit 7–12, friendly robber). Others see them read-only. A change un-readies everyone except the host. Rematch keeps them. House rules go in `RULES.md` |
+| 2 | History scroll bar breaks with long text | Reproduce in the browser and fix (suspects: the notepad's rotation, long unbreakable lines) |
+| 3 | Trade panel blinks whenever someone interacts | Its entry animation replays on every redraw; play it only when the panel opens (start time kept like other effects) |
+| 4 | Warning when holding more than the discard limit | Your hand gets a red edge and a "!" note "Over 7: a 7 makes you discard n"; tooltip explains |
+| 5 | Discards go unnoticed | Full-screen discard window (like the win screen) with the picker, for players who owe cards; others see who is still discarding |
+| 6 | Steal shows other players' cards in a tooltip | Owner: it named resource types of others. Reproduce; likely `retip()` instantly showing the tip of whatever history line slides under the pointer after the steal panel disappears |
+| 7 | Players should roll for the starting player themselves, all at once | New `order` phase after start: every player taps their dice (`firstRoll`), in any order; ties reroll among the tied; then setup begins |
+
+## Steps
+
+1. **Lobby settings (1).**
+2. **Starting roll (7).**
+3. **Discard warning and window (4, 5).**
+4. **Client fixes (2, 3, 6).**
+5. **Checks.**

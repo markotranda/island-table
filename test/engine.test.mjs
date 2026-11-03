@@ -108,6 +108,28 @@ test('the map sets seats, board, supply and deck; the host starts once two or mo
   }
 });
 
+test('the host changes the table settings in the lobby; points to win, discard limit and friendly robber apply in play',()=>{
+  let g=newGame('test');for(const n of ['A','B','C','D','E'].slice(0,4))addPlayer(g,n,n);g.players.forEach(p=>p.ready=true);
+  assert.throws(()=>apply(g,1,{type:'settings',goal:8},rng()),/Only the host/);
+  for(const bad of [{goal:4},{goal:21},{limit:6},{limit:13},{goal:'9'},{map:'huge'},{setup:'odd'},{friendly:'yes'}])assert.throws(()=>apply(g,0,{type:'settings',...bad},rng()));
+  g=apply(g,0,{type:'settings',map:'extended',setup:'fixed',goal:6,limit:9,friendly:true},rng());
+  assert.deepEqual([g.map,g.seats,g.setup,g.goal,g.limit,g.friendly],['extended',6,'fixed',6,9,true]);
+  assert.deepEqual(g.players.map(p=>p.ready),[true,false,false,false],'a change asks the others to ready up again');
+  g.players.forEach(p=>p.ready=true);g=apply(g,0,{type:'settings',goal:6},rng());assert.ok(g.players.every(p=>p.ready),'an unchanged value keeps everyone ready');
+  addPlayer(g,'E','E');assert.throws(()=>apply(g,0,{type:'settings',map:'base'},rng()),/Too many players/);
+  // Discard limit: 9 cards is fine with a limit of 9, 10 is not.
+  let h=clear(fixture(3));h.goal=10;h.limit=9;h.players[0].hand.wood=9;h.bank.wood-=9;h.players[1].hand.brick=10;h.bank.brick-=10;h.phase='preRoll';
+  const seven=()=>{let k=0;return n=>[2,3][k++]??0;};h=apply(h,0,{type:'roll'},seven());assert.deepEqual(h.discards,[0,5,0]);
+  // Points to win: 6 points ends the game when the goal is 6.
+  let w=clear(fixture(3));w.goal=6;w.phase='action';for(const v of w.board.vertices.filter(v=>v.hexes.length===3).filter((v,i)=>i%7===0).slice(0,3))v.building={owner:0,kind:'city'};w.players[0].hand={wood:1,brick:1,wool:0,wheat:0,ore:0};
+  w=apply(w,0,{type:'end'},rng());assert.equal(w.phase,'finished');assert.equal(w.winner,0);
+  // Friendly robber: a player with 2 points or fewer is never a victim.
+  let r=clear(fixture(3));r.friendly=true;r.phase='robber';r.resumePhase='action';const hex=r.board.hexes.find(x=>x.id!==r.robber);const [v1,v2]=hex.vertices.filter((_,i)=>i%2===0);
+  r.board.vertices[v1].building={owner:1,kind:'settlement'};r.board.vertices[v2].building={owner:2,kind:'city'};for(const v of r.board.vertices.filter(v=>!v.building).slice(0,2))v.building={owner:2,kind:'settlement'};
+  r.players[1].hand.ore=1;r.players[2].hand.ore=1;r.bank.ore-=2;r=apply(r,0,{type:'robber',hex:hex.id},rng());assert.equal(r.players[2].hand.ore,0,'the 4-point player is robbed');assert.equal(r.players[1].hand.ore,1,'the 1-point player is spared');
+  const re=apply({...structuredClone(w),phase:'finished'},0,{type:'rematch'},rng());assert.deepEqual([re.goal,re.limit,re.friendly],[6,7,false],'a rematch keeps the settings');
+});
+
 test('extended map with four players uses classic turns; paired turns need five or six',()=>{
   let g=fixture(4,'fixed','extended');assert.equal(g.board.hexes.length,30);
   const first=g.active;g=apply({...g,phase:'action'},first,{type:'end'},rng());

@@ -22,8 +22,10 @@ const phaseLabel=page=>page.text('.turn-card .eyebrow');
 const noOverflow=page=>page.eval('document.documentElement.scrollWidth<=window.innerWidth');
 
 async function createTable(page,base,name,map,setup){
-  await page.goto(base);await page.type('#nickname',name);await page.select('#map',map);await page.select('#setup',setup);
+  await page.goto(base);await page.type('#nickname',name);
   await page.click('#entry button.primary');await page.waitFor(`document.querySelector('[data-command="ready"]')`);
+  // The map and island setup are chosen in the lobby; each change waits for the server to confirm it.
+  for(const [k,v] of [['map',map],['setup',setup]])if(await page.eval(`document.querySelector('[data-setting="${k}"]').value`)!==v){await page.select(`[data-setting="${k}"]`,v);await page.waitFor(`document.querySelector('[data-setting="${k}"]')?.value===${JSON.stringify(v)}&&document.querySelector('[data-ui="settings"]').dataset.${k}===${JSON.stringify(v)}`);}
 }
 async function joinByInvite(page,link,name){
   await page.goto(link);await page.waitFor(`document.querySelector('#code')?.value.length===12`,{message:'Invite did not prefill the room code'});
@@ -114,6 +116,10 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     assert.ok(await host.eval(`document.querySelector('[data-command="start"]').disabled`),'start waits for everyone to be ready');
     assert.match(await host.eval('getComputedStyle(document.documentElement).backgroundImage'),/gradient/,'the wood covers the whole page, not just the body');
     assert.equal(await host.text('[data-ui="start-hint"]'),'Waiting for you, Ana and Ben to get ready.');
+    // Settings live in the lobby: the host changes points to win after inviting; guests see it read-only, and a change un-readies them.
+    await ana.click('[data-command="ready"]');await ana.waitFor(`document.querySelector('[data-command="ready"]').textContent.includes('Not ready')`);
+    await host.select('[data-setting="goal"]','12');await ana.waitFor(`document.querySelector('[data-value="goal"]')?.textContent==='12'`,{message:'guests did not see the new points to win'});
+    assert.ok(!await ana.has('[data-setting]'),'only the host can change settings');assert.match(await ana.text('[data-command="ready"]'),/ready/i);assert.ok(!await ana.has('.lobby-seat.is-ready'),'changing a setting un-readies the guests');
     // The recovery key is offered in the lobby; Ben uses it on a new device mid-game below.
     await ben.click('[data-ui="seat"]');await ben.click('[data-ui="copy-seat"]');const key=await ben.waitFor('window.__copied.at(-1)');await ben.click('[data-ui="close"]');
     // Everyone readies at once: conflicting revisions must resolve without asking anyone to click again.
@@ -125,6 +131,7 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     await host.click('[data-command="start"]');
     for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`,{message:'Game did not start on every screen'});
     assert.match(await phaseLabel(host),/FOUNDATIONS/);
+    assert.match(await host.text('.table-line'),/First to 12 points/);
 
     await listen(pages);let active=await playSetup(pages);
     // Starting resources fly from their tiles; each card that lands plays a pop.

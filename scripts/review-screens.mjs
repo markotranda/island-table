@@ -23,7 +23,7 @@ try{
   for(let i=0;i<4;i++)pages.push(await browser.newPage({width:1440,height:900}));
   const [host]=pages;
   await host.goto(base);await shot(host,'01-home');
-  await host.type('#nickname',names[0]);await host.select('#map','base');await host.select('#setup','variable');await host.click('#entry button.primary');await host.waitFor(`document.querySelector('[data-command="ready"]')`);
+  await host.type('#nickname',names[0]);await host.click('#entry button.primary');await host.waitFor(`document.querySelector('[data-command="ready"]')`);
   const room=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);
   for(let i=1;i<3;i++){await pages[i].goto(`${base}/?room=${room}`);await pages[i].waitFor(`document.querySelector('#code')?.value.length===12`);await pages[i].type('#nickname',names[i]);await pages[i].click('#entry button.primary');await pages[i].waitFor(`document.querySelector('[data-command="ready"]')`);}
   await pages[1].click('[data-command="ready"]');await host.waitFor(`document.querySelector('.lobby-seat.is-ready')`);await shot(host,'02-lobby');
