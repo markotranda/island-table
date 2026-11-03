@@ -41,7 +41,7 @@ function step(id){let moved=null,wait=null;
       if(next){next.revision=g.revision+1;save(next);moved=next;return;}}
   });}catch(e){console.error(`Bot step in room ${id} failed:`,e);}
   // A failed bot leaves the room alone until the next change instead of retrying in a loop.
-  if(moved){broadcast(moved);wake(id);}else if(wait!==null)wake(id,wait);}
+  if(moved){broadcast(moved);wake(id);}else if(wait!==null)wake(id,Math.max(50,Math.round(wait*pace)));}
 // A bot stands in for a player the game waits on (their turn, a discard, the starting roll) once they have been offline for a minute,
 // as long as someone else is still at the table to see it. BOT_AWAY (ms) changes the minute for tests.
 const offlineFor=(id,pid)=>online(id).has(pid)?0:Date.now()-(away.get(id)?.get(pid)??started);

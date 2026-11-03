@@ -397,3 +397,4 @@
 .trade-panel{animation-delay:var(--t)}
 /* Buildings explain themselves on hover (their tooltips were unreachable while the pieces ignored the pointer). */
 .board .building{pointer-events:auto}
+.lobby-seat.add-bot{width:100%;font:inherit;font-size:12px;cursor:pointer}.lobby-seat.add-bot:hover:not(:disabled){background:#fffaf03d;border-color:#f6e8cc;transform:translateY(-1px)}.lobby-seat .remove-bot{padding:4px 6px;margin-left:-4px;line-height:0}.lobby-seat .remove-bot .ui-ico{width:11px;height:11px}.player .takeover{margin-top:8px;width:100%;font-size:10px;padding:5px 8px;background:#fffdf6}

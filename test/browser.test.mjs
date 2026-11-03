@@ -12,9 +12,9 @@ const R=['wood','brick','wool','wheat','ore'];
 const skip=!browserPath&&'No Chrome, Chromium or Edge found (set BROWSER)';
 
 // Hosts browse at localhost while PUBLIC_ORIGIN advertises 127.0.0.1, so friends arrive from a different origin, as they do over a LAN.
-async function startServer(){
+async function startServer(env={}){
   const probe=createServer().listen(0,'127.0.0.1');await once(probe,'listening');const port=probe.address().port;probe.close();await once(probe,'close');
-  const dir=mkdtempSync(resolve('tmp','browser-test-')),child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,PUBLIC_ORIGIN:`http://127.0.0.1:${port}`},stdio:['ignore','pipe','pipe']});
+  const dir=mkdtempSync(resolve('tmp','browser-test-')),child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,PUBLIC_ORIGIN:`http://127.0.0.1:${port}`,...env},stdio:['ignore','pipe','pipe']});
   await new Promise((ok,fail)=>{let text='';const timer=setTimeout(()=>fail(new Error('Server did not start')),10000);child.stdout.on('data',d=>{text+=d;if(/ready at/.test(text)){clearTimeout(timer);ok();}});child.on('exit',code=>{clearTimeout(timer);fail(new Error('Server exit '+code));});});
   return {dir,host:`http://localhost:${port}`,invite:`http://127.0.0.1:${port}`,async stop(){const exited=once(child,'exit');child.kill();await exited;}};
 }
@@ -373,5 +373,35 @@ test('browser: five players use paired turns and neutral fixed settlements',{ski
     await p2.click('[data-command="end"]');
     assert.equal(await waitActive(pages,p1),pages[(s1+1)%5],'both markers advance one seat');
     for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
+  }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+
+test('browser: the host seats bots who play their own turns, and a bot stands in for a friend who left until they return',{skip,timeout:120000},async()=>{
+  const server=await startServer({BOT_PACE:'0.05'}),browser=await launch();let pages=[];
+  try{
+    const host=await browser.newPage(),friend=await browser.newPage();pages=[host,friend];await createTable(host,server.host,'Marko','base','variable');
+    for(const n of [1,2]){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('[data-bot]').length===${n}`);}
+    const names=await host.eval(`[...document.querySelectorAll('[data-bot] .player-name')].map(e=>e.firstChild.textContent.trim())`);assert.ok(names.every(n=>/^\w+ \(Bot\)$/.test(n)&&!n.startsWith('Marko')),names.join());
+    await host.click('[data-remove-bot]');await host.waitFor(`document.querySelectorAll('[data-bot]').length===1`);const bot=names[1];
+    const room=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);await joinByInvite(friend,`${server.invite}/?room=${room}`,'Friend');
+    assert.ok(!await friend.has('[data-command="addBot"]'),'only the host adds bots');
+    for(const page of pages){await page.click('[data-command="ready"]');await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
+    await host.click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);
+    // Bots take their own placements and may play a whole turn before a person rolls, so setup can need a few rounds of waiting.
+    for(let i=0;;i++){try{await playSetup(pages);break;}catch(e){if(i>5)throw e;}}
+    assert.equal(await host.eval(`document.querySelectorAll('.building[data-owner="1"]').length`),2,'the bot placed its own settlements');
+    // The friend leaves; the host lets a bot play for them, and their seat reads "Friend (Bot)" meanwhile.
+    await friend.click('[data-ui="home"]');await host.waitFor(`document.querySelector('[data-takeover="2"]')`,{message:'No takeover button for the absent friend'});
+    await host.click('[data-takeover="2"]');await host.waitFor(`[...document.querySelectorAll('.sidebar .player-name')].some(e=>e.textContent.includes('Friend (Bot)'))`);
+    await host.waitFor(`[...document.querySelectorAll('.log-item')].some(e=>e.textContent.includes('let a bot play for Friend'))`);
+    // Two rounds: the host plays its turns, the bot and the stand-in theirs.
+    for(let k=0;k<2;k++){await host.waitFor(`document.querySelector('[data-command="roll"]')`,{timeout:45000,message:'The bots did not hand the turn back'});await playTurn([host],host);}
+    await host.waitFor(`document.querySelector('[data-command="roll"]')`,{timeout:45000});
+    const rolls=await host.eval(`[...document.querySelectorAll('.log-item')].filter(e=>/ rolled \\d+\\./.test(e.textContent)).map(e=>e.textContent)`);
+    for(const who of ['Friend (Bot)',bot])assert.ok(rolls.some(r=>r.startsWith(who)),`${who} rolled: ${rolls}`);
+    // Coming back gives the seat back.
+    await friend.click(`[data-resume="${room}"]`);await friend.waitFor(`document.querySelector('svg.board')`);
+    await host.waitFor(`[...document.querySelectorAll('.log-item')].some(e=>e.textContent.includes('Friend is back'))`,{message:'The seat was not handed back'});
+    assert.ok(!await host.has('[data-takeover]'));for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
