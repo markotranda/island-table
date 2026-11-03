@@ -96,8 +96,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 1. Page fixes | done | 6ad8588 | |
 | 2. Saved seats | done | see log | |
 | 3. Build cards | done | see log | |
-| 4. Stacked dev cards | next | | |
-| 5. Setup flights | | | |
+| 4. Stacked dev cards | done | see log | |
+| 5. Setup flights | next | | |
 | 6. Placement highlight | | | |
 | 7. Tooltips | | | |
 | 8. Checks | | | |
@@ -119,3 +119,8 @@ Plan: "Round 2" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Step 1 follow-up: the right column still scrolled as a whole with a long history, because the `.sr` screen-reader spans (absolutely positioned) escaped the log list's clipping to the nearest positioned ancestor. `.log-list{position:relative}`; on desktop the history fills the rest of the column (`flex:1`) and only its list scrolls.
   - `scripts/review-screens.mjs` now prints which elements scroll on each screen (`scrolls:<class> client/scroll`).
   - Browser tests: road cost marks for the active player and an off-turn player; with 40 staged history entries only `.log-list` scrolls, not `.control-sidebar` (fails without the `position:relative`).
+
+- 2026-11-03, step 4:
+  - `devStacks(me,playable)` in `app.js`: one `.dev-card` per type (order of `names`), `data-card` = id of a playable card of that type (else the first), new `data-type`, count badge `<b>` when more than one, "n new" tag moved to the bottom. `DEV_HELP` holds what each card does; it is in the card's title now and is meant for the step 7 tooltips (and history).
+  - Stacks get an offset second edge (`box-shadow`); badge styled like hand cards.
+  - Browser test: two dealt Knights render as one card with "2"; the title explains the card. Review script deals Mara two Knights.

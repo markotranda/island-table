@@ -202,11 +202,13 @@ test('browser: discards, player and bank trades, and every development card',{sk
 
     await stage(server,pages,(g,{setHand,deal,topDeck})=>{assert.equal(g.phase,'action');
       setHand(a,{wood:5,wool:1,wheat:2,ore:2});setHand(b,{brick:2,wool:2});setHand(c,{wool:3,ore:1});
-      deal(a,'monopoly');deal(b,'invention');deal(c,'roads');deal(c,'vp');topDeck('knight');
+      deal(a,'monopoly');deal(b,'invention');deal(c,'roads');deal(c,'vp');deal(c,'knight');deal(c,'knight');topDeck('knight');
       // A long earlier history, so the layout check below has something to scroll.
       for(let i=0;i<40;i++){g.eventSeq=(g.eventSeq??g.events.length)+1;g.events.splice(-1,0,{id:g.eventSeq,turn:g.turn-1,kind:'build',p:c,piece:'road'});}});
     assert.equal(await scoreOf(C,c),await scoreOf(A,c)+1,'a hidden Victory Point counts only on its owner’s screen');
     assert.ok(await C.eval(`${cardButton('Victory Point')}.disabled`),'Victory Point cards cannot be played');
+    assert.deepEqual(await C.eval(`[...document.querySelectorAll('[data-card][data-type="knight"]')].map(b=>b.querySelector('b')?.textContent)`),['2'],'two Knights stack into one card with a count');
+    assert.match(await C.eval(`${cardButton('Knight')}.title`),/steal 1 resource/,'cards say what they do');
 
     // Only the current player starts trades. B accepts while C counters at the same moment: both reach A live,
     // A declines the counter and then chooses B among the players who accepted.

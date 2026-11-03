@@ -45,7 +45,7 @@ try{
     const hand=(p,h)=>{for(const r of R){g.bank[r]+=g.players[p].hand[r];g.players[p].hand[r]=0;}for(const r of R){const n=Math.min(h[r]||0,g.bank[r]);g.bank[r]-=n;g.players[p].hand[r]=n;}};
     hand(0,{wood:2,brick:1,wool:3,wheat:2,ore:3});hand(1,{wood:1,brick:2,wheat:1,ore:1});hand(2,{wool:2,wheat:3,ore:1});hand(3,{wood:3,brick:2,wool:1});
     const deal=(p,type)=>{const i=g.deck.lastIndexOf(type);if(i<0)return;g.deck.splice(i,1);g.players[p].cards.push({type,bought:-1,id:`review-${type}-${p}-${g.players[p].cards.length}`});};
-    deal(0,'knight');deal(0,'roads');deal(0,'vp');deal(1,'monopoly');deal(2,'knight');
+    deal(0,'knight');deal(0,'knight');deal(0,'roads');deal(0,'vp');deal(1,'monopoly');deal(2,'knight');
     g.players[0].knights=3;g.awards.army=0;g.players[2].knights=1;g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);g.deck.splice(g.deck.indexOf('knight'),1);
     const target=g.board.hexes.filter(h=>h.number&&[6,8,5,9].includes(h.number))[0];if(target)g.robber=target.id;
     g.turn=14;g.active=0;g.primary=0;g.phase='action';g.dice=[4,5];g.offers=[];
