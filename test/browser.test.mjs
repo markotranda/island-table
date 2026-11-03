@@ -206,11 +206,13 @@ test('browser: discards, player and bank trades, and every development card',{sk
       g.dice=[3,4];g.phase='discard';g.discards=g.players.map((_,i)=>i===b?4:0);g.resumePhase='action';return [a,b,c];});
     const [A,B,C]=[pages[a],pages[b],pages[c]];
     assert.match(await B.text('#discard h3'),/Return 4/);
+    assert.ok(await B.has('[data-ui="discard"] #discard'),'the discard opens as a window over the board');assert.ok(await B.has('[data-ui="discard-risk"]')&&await B.has('.hand.at-risk'),'nine cards show the over-seven warning');assert.ok(!await C.has('[data-ui="discard-risk"]'),'one card is no risk');
     assert.ok(!await A.has('#discard')&&!await C.has('#discard'),'only players over seven discard');
     assert.ok(!await A.has('[data-hex]'),'the robber waits for discards');
     await fill(B,'discard',{'discard-wood':1});await submit(B,'discard');await toastIncludes(B,'exactly 4');
     await fill(B,'discard',{'discard-wood':2,'discard-brick':2});await submit(B,'discard');await B.waitFor(`!document.querySelector('#discard')`);
     assert.deepEqual(await hand(B),{wood:0,brick:0,wool:2,wheat:2,ore:1});
+    assert.ok(!await B.has('[data-ui="discard"]')&&!await B.has('[data-ui="discard-risk"]'),'the window closes and five cards are safe');
     await resolveRoll(pages,A);
 
     // A lone victim is robbed at once, without a pick: the card flies face-down for onlookers and face-up for the victim.

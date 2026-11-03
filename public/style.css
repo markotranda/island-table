@@ -377,3 +377,17 @@
 .order-row .table-dice.order-roll .die{width:34px;height:34px}
 .order-row .table-dice.order-roll .roll-hint{font-size:12px}
 @media(prefers-reduced-motion:reduce){.order-dice.tumbling .die-wrap{animation:none}}
+/* More cards than the discard limit: a red edge on the hand and a small warning beside its count. */
+.hand-top .risk{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:11px;font-weight:650;color:#a3352a;background:#fbe3dc;border:1px solid #e3a29b;border-radius:12px;padding:2px 9px 2px 3px;cursor:help}
+.hand-top .risk b{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#c4473a;color:#fff;font-size:11px}
+.hand.at-risk .resource-card:not(.empty){box-shadow:0 0 0 2px #c4473a99,0 4px 10px #c4473a44}
+/* The discard window: like the win screen, it sits over everything until the cards are returned. */
+.discard-screen{position:fixed;inset:0;z-index:25;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 40%,#2a1c10aa,#140c06d9);animation:victory-in .3s ease-out both}
+.discard-card{position:relative;width:min(520px,100%);max-height:calc(100dvh - 40px);overflow:auto;text-align:center;background:#fbf3df;border:2px solid #d6bd8b;border-top:10px solid #c4473a;border-radius:18px;padding:24px 26px 22px;box-shadow:0 6px 0 #c8ad78,0 30px 80px #000a;animation:card-up .5s cubic-bezier(.2,1.4,.4,1) both}
+.discard-card .eyebrow{color:#a3352a}.discard-card h3{font-size:30px;margin:6px 0 6px;color:#2f2a20}
+.discard-card .picker{justify-content:center;margin:14px 0 4px}
+.discard-card .seven{position:absolute;top:12px;right:16px;width:40px;height:40px;border-radius:9px;background:#fbf4e2;border:1.5px solid #b5a37c;display:grid;place-items:center;font:700 22px Georgia,serif;color:#c4473a;transform:rotate(8deg)}
+@media(prefers-reduced-motion:reduce){.discard-screen,.discard-card{animation:none}}
+@media(max-width:620px){.discard-card{padding:20px 14px}.discard-card h3{font-size:24px}}
+/* Redraws keep the window still: its entrance resumes from when it first opened. */
+.discard-screen,.discard-card{animation-delay:var(--t)}

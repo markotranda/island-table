@@ -155,8 +155,8 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
 | 0. Plan written | done | with step 1 | |
 | 1. Lobby settings | done | see log | |
 | 2. Starting roll | done | see log | |
-| 3. Discard warning and window | in progress | | |
-| 4. Client fixes | pending | | |
+| 3. Discard warning and window | done | see log | |
+| 4. Client fixes | in progress | | |
 | 5. Checks | pending | | |
 
 ## Round 3 log
@@ -171,3 +171,8 @@ Plan: "Round 3" in [`docs/feedback-plan.md`](docs/feedback-plan.md).
   - Engine: `start()` builds the board and enters phase `order` with `g.order={round,candidates,done,dice}`. Command `firstRoll` (any candidate who hasn't rolled this round) logs `order {p,dice,round}`; when all candidates have rolled, a tie logs `tie {players,total,round}` and narrows `candidates`, otherwise `first {p,total}` and `place()` (fixed placements or the setup order, formerly the tail of `start()`). No win check in `order`.
   - Client: `orderHtml()` (`data-ui="order"`) over the board lists every player with their dice (tumble on new rolls), your own dice are the button (`data-command="firstRoll"`); turn card says who still rolls; toast "X goes first."; sounds: roll, warn on a tie. `firstRoll` auto-retries on 409 while the round and your own rolled flag are unchanged.
   - Tests: engine test for any-order rolls, double-roll refusal, ties narrowing to the tied players, fixed placement after the roll; `fixture()`/matches/server tests roll through `order`. Browser: `rollForStart(pages)` clicks every page's dice at once (used by `playSetup` and `seatTable`); the first test asserts everyone has dice, nobody gets "try again", and the winner is in the history.
+
+- 2026-11-03, step 3 (discard warning and window):
+  - `hand()`: holding more than `state.limit` cards adds `.hand.at-risk` (red edge on the cards) and a `[data-ui="discard-risk"]` note "Over 7: a 7 costs you n" with a tooltip.
+  - `discardHtml()`: a fixed full-screen `.discard-screen` (`data-ui="discard"`) holding the same `#discard` form (h3 "Return n resources", picker, total) for players who owe cards; names others still discarding. Removed from the right column. Entrance animation resumes from `discardAt` so live redraws don't replay it.
+  - Browser test asserts the window, the warning at 9 cards, none at 1, and both gone after discarding. Review script: new `15-starting-roll`; `08-discard` now shows the window.

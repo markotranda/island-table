@@ -30,6 +30,9 @@ try{
   const jun=pages[3];await jun.goto(`${base}/?room=${room}`);await jun.waitFor(`document.querySelector('#code')?.value.length===12`);await jun.type('#nickname',names[3]);await jun.click('#entry button.primary');await jun.waitFor(`document.querySelector('[data-command="ready"]')`);
   for(const p of [host,pages[2],jun]){await p.click('[data-command="ready"]');await p.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
   await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await host.click('[data-command="start"]');for(const p of pages)await p.waitFor(`document.querySelector('svg.board')`);
+  // Starting roll: two players roll, the host sees the others' dice and their own to tap; then everyone else rolls (again after ties).
+  for(const p of [pages[1],pages[2]])await p.click('[data-command="firstRoll"]');await host.waitFor(`document.querySelectorAll('[data-ui="order"] .order-dice').length===2`);await shot(host,'15-starting-roll');
+  for(let step=0;step<40;step++){let open=false;for(const p of pages){if(await p.has('[data-command="firstRoll"]'))await p.click('[data-command="firstRoll"]').catch(()=>{});if(await p.has('[data-ui="order"]'))open=true;}if(!open)break;await pause(150);}
   // Setup: click highlighted spots on whichever screen has them; screenshot the first round partway through.
   let placed=0;
   for(let step=0;step<80;step++){if(await Promise.any(pages.map(async p=>(await p.has('[data-command="roll"]'))||Promise.reject())).catch(()=>false))break;
