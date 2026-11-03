@@ -11,9 +11,9 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
 | 0. Plan written | done | 2816040 (with step 1) | Usage at start: 5-hour 24%, weekly 19%, context 11% |
 | 1. Engine and rules | done | 2816040 | Usage after: 5-hour 32%, weekly 20%, context 22% |
 | 2. Board and build bar | done | e4605aa | Usage after: 5-hour 37%, weekly 21%, context 25% |
-| 3. Trade panel | done | (see log) | |
-| 4. Dice | next | | |
-| 5. Resource animations | pending | | Roll events already carry `gains:[{p,hex,r,n}]`; steal events carry `p`, `from` |
+| 3. Trade panel | done | 24a38f2 | Usage after: 5-hour 40%, weekly 21%, context 27% |
+| 4. Dice | done | (next commit) | |
+| 5. Resource animations | next | | Roll events already carry `gains:[{p,hex,r,n}]`; steal events carry `p`, `from` |
 | 6. Win screen and sound | pending | | |
 | 7. Icons | pending | | Needs the owner's OK before downloading SVGs |
 | 8. Checks | pending | | |
@@ -44,6 +44,12 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Bank and trade forms moved out of `controls()`; the right column is now turn card, End turn (+ build hint), waiting text, history.
   - New offers flash once (`seenOffers`, `.offer.fresh`), respecting reduced motion. Phone: bottom sheet.
   - Browser test: incoming offer opens the panel; close hides it behind the launcher; reopen works. Browser suite passed 2/2 with `THROTTLE=6`.
+
+- 2026-11-03, step 4:
+  - Event tracker in `app.js`: `noticeEvents()` (called from `render()`) turns history entries newer than `seenEvent` into `effects` with a start time; the first state per room only sets the baseline (`enter()` resets it). `effect(kind,ms)` finds a live effect; `since(f)` gives elapsed ms, used as a negative `animation-delay` (`--t`) so redraws don't restart animations. Step 5 should reuse this for production/steal effects.
+  - `diceHtml()`: on your `preRoll` the dice are a `<button class="table-dice roll-me" data-command="roll">` with a glow and "Roll the dice" pill; otherwise the last roll, with `.tumbling` + `.roll-total` for 2.6 s after a new roll. Roll button removed from the turn card; preRoll instruction text updated.
+  - CSS keyframes `roll-glow`, `roll-wiggle`, `tumble`, `tumble2`, `total-pop`; disabled under `prefers-reduced-motion`.
+  - `scripts/review-screens.mjs` adds `11-your-roll` and `12-roll-seen`.
 
 ## Handoff prompt
 

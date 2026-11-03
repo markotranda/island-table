@@ -71,6 +71,11 @@ try{
   // Phone view of the same table.
   const phone=await browser.newPage({width:390,height:844});
   const seats=await me.eval(`localStorage.getItem('island-seats')`);await phone.goto(base);await phone.eval(`localStorage.setItem('island-seats',${JSON.stringify(seats)})`);await phone.goto(`${base}/?room=${room}`);await phone.waitFor(`document.querySelector('svg.board')`);await shot(phone,'09-phone');
+  // Your roll: the glowing dice; then the tumble and total another player sees just after the roll.
+  await stage(g=>{g.phase='preRoll';delete g.discards;delete g.resumePhase;g.players.forEach(p=>{p.played=false;});});
+  await me.waitFor(`document.querySelector('.roll-me')`);await pause(500);await shot(me,'11-your-roll');
+  const watcher=pages[(viewer+1)%4];await me.click('.roll-me');await watcher.waitFor(`document.querySelector('.roll-total')`);await pause(1100);await shot(watcher,'12-roll-seen');
+  await pause(800);
   // Game over.
   await stage(g=>{g.phase='finished';g.winner=0;g.offers=[];delete g.discards;delete g.resumePhase;const extra=g.board.vertices.filter(v=>v.building?.owner===0&&v.building.kind==='settlement');extra.forEach(v=>v.building.kind='city');while(score(g,0,true)<10){const i=g.deck.lastIndexOf('vp');g.deck.splice(i,1);g.players[0].cards.push({type:'vp',bought:-1,id:'review-vp-final-'+g.players[0].cards.length});}g.events.push({turn:g.turn,text:`Mara wins with ${score(g,0,true)} points!`});});
   await shot(pages[1],'10-game-over');

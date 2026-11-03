@@ -223,7 +223,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await A.click('[data-command="end"]');
 
     // Invention before rolling takes two resources from the supply.
-    assert.equal(await waitActive(pages,A),B);const before=await hand(B);
+    assert.equal(await waitActive(pages,A),B);assert.ok(await B.has('.table-dice.roll-me')&&!await A.has('.roll-me'),'only the roller gets the dice button');const before=await hand(B);
     await clickCard(B,'Invention');await fill(B,'invention',{'take-ore':1,'take-wheat':1});await submit(B,'invention');await B.waitFor(`!document.querySelector('#invention')`);
     assert.deepEqual(await hand(B),{...before,ore:before.ore+1,wheat:before.wheat+1});
     await playTurn(pages,B);
