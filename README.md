@@ -2,6 +2,26 @@
 
 A private 2-6 player browser game following the 2025 rules of a classic island-trading board game and its paired-player expansion. Original SVG visuals, live multiplayer, hidden hands, SQLite saves, and Docker hosting. No account, npm install, external assets, telemetry, or cloud service is needed.
 
+![A game in progress: the island on a wooden table, players around it, your hand and the build bar below](docs/screenshots/board.jpg)
+
+## What a game feels like
+
+- **A board game on a table.** The island sits in a wooden frame on a wooden table, with wooden pieces in each player's colour, number tokens with probability dots, and your resource cards fanned at the bottom.
+- **Roll the dice by tapping them.** On your turn the dice on the board glow and wiggle with a *Roll the dice* pill. Everyone sees them tumble and the total pop up.
+- **Watch the resources move.** Tiles that produce flash, and their cards fly to whoever collects them. A stolen card flies from victim to thief, face-down for everyone else.
+- **Build from the bar beside your hand.** Road, settlement, city and development card, each with its cost and how many pieces you have left. Pick one, then a highlighted spot.
+- **Trade at the table.** On your turn you offer a trade to everyone. Others accept, decline or counter; you choose who to trade with. Offers pop up over the corner of the board for everyone who can answer. Supply and port trades sit in the same panel.
+- **A history that says who got what.** Every roll, gain, theft, card, trade and build is written down with resource icons. Only the people involved see which card was stolen or bought.
+- **Sound everywhere.** Dice rattle, cards pop as they land, wooden knocks for building, coins for trades, a chime when your turn starts and a fanfare for the winner. All synthesized in the browser; mute it from the header.
+- **A proper ending.** The winner gets a full-screen banner with confetti and the final scores, and the host can start a rematch.
+
+| | | |
+| --- | --- | --- |
+| ![The home page](docs/screenshots/home.jpg) | ![A roll: the 8 tiles flash and wood cards fly to their owners](docs/screenshots/roll.jpg) | ![Trading: an accepted offer and a counteroffer in the floating panel](docs/screenshots/trade.jpg) |
+| Create a table and share the invite | A roll: producing tiles flash, cards fly | Offers, accepts and counters |
+| ![The win banner with the final scores](docs/screenshots/win.jpg) | ![The game on a phone](docs/screenshots/phone.jpg) | |
+| The winner's banner | Works on phones too | |
+
 ## Run with Docker
 
 ```sh
@@ -57,8 +77,9 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are 
 ## Play and reconnect
 
 - The server validates all moves and supplies dice, shuffles, and random thefts.
-- Choose an action, then click a highlighted edge or intersection. Building costs and a field guide are available in-game.
-- Player trades support proposals and counteroffers. Click **Offer a player trade** to respond with a different offer.
+- Tap the glowing dice to roll. Build from the bar beside your hand, then click a highlighted edge or intersection; Esc cancels. **How to play** explains the rules in-game.
+- On your turn, open **Trade → Players** to offer a trade to everyone, or **Supply** for 4:1 and port trades. Other players accept, decline or **Counter**; you confirm with one of the players who accepted. Close the trade panel to hide offers until a new one arrives.
+- When only one player can be robbed, the robber steals from them at once.
 - Only you receive your private cards. Your own score includes hidden Victory Point cards; other players see your public score until the game ends.
 - Refreshing or reconnecting restores your saved seat and the current phase. An interrupted player must reconnect to finish required decisions; there are no automatic skips or bots.
 - Lobby **Seat recovery** provides a private recovery key. On another device, use **How to play → Recover a seat**. Protect this key like a password. Room invitations grant a new lobby seat, not control of an existing player.
@@ -72,7 +93,9 @@ node --test test/*.test.mjs
 
 Tests cover board inventories and topology, fixed and snake setups at all player counts, legal moves, trades, production shortages, robbery and discards, all development actions, paired turns, scoring, privacy, resource conservation, complete simulated games, HTTP authentication, duplicate commands, stale revisions, live streams, and server restart recovery. Network integration tests create isolated temporary databases in ignored `tmp/` directories.
 
-Browser tests play through the real interface in headless Chrome, Chromium, or Edge with several isolated players: invitation links, the live lobby, simultaneous readying, setup placement, turns including the robber, reload reconnection, seat recovery on another device, phone-width layout, discards, simultaneous player offers and bank trades, every development card, a Largest Army win followed by a rematch, and 5-player paired turns. Situations dice cannot be relied on to produce are staged by rewriting the saved game between commands, keeping supply and deck totals conserved; everything else goes through the interface. They use an installed browser (set `BROWSER=/path/to/chrome` to choose one) and are skipped when none is found.
+Browser tests play through the real interface in headless Chrome, Chromium, or Edge with several isolated players: invitation links, the live lobby, simultaneous readying, setup placement, turns including the robber, reload reconnection, seat recovery on another device, phone-width layout, discards, a lone-victim robbery with its flying card, trade offers answered and countered at the same moment, bank trades, every development card, who hears which sound, the mute toggle, a Largest Army win with its banner followed by a rematch, and 5-player paired turns. Situations dice cannot be relied on to produce are staged by rewriting the saved game between commands, keeping supply and deck totals conserved; everything else goes through the interface. They use an installed browser (set `BROWSER=/path/to/chrome` to choose one) and are skipped when none is found.
+
+`node scripts/review-screens.mjs <dir>` stages a four-player game and saves screenshots of every major screen for design reviews (`FORMAT=jpeg` for smaller files, as used for `docs/screenshots/`).
 
 ## Operate and back up
 
@@ -114,6 +137,9 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 | `public/` | Responsive interface and original board rendering |
 | `test/` | Rule, complete-match, server integration, and headless browser tests |
 | `scripts/backup.mjs` | Consistent SQLite backup utility |
+| `scripts/icons.mjs` | Generates the inline icon sprite (original resource art, Font Awesome interface icons) |
+| `scripts/review-screens.mjs` | Screenshots of every major screen in a staged game |
+| `docs/` | Screenshots, the first-game feedback plan, and project notes |
 | `RULES.md` | Source mapping and documented conventions |
 | `PLAN.md` | Original proposal and implementation decisions |
 

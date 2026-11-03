@@ -13,7 +13,8 @@ mkdirSync('tmp',{recursive:true});const dir=mkdtempSync(resolve('tmp','review-')
 const server=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:'0',HOST:'127.0.0.1',DATA_DIR:dir},stdio:['ignore','pipe','inherit']});
 const base=await new Promise((ok,fail)=>{let t='';server.stdout.on('data',d=>{t+=d;const m=t.match(/http:\/\/localhost:(\d+)/);if(m)ok(`http://localhost:${m[1]}`);});server.on('exit',c=>fail(new Error('server exit '+c)));});
 const browser=await launch();const pages=[];
-const shot=async(page,name)=>{await pause(400);writeFileSync(join(out,name+'.png'),await page.screenshot());console.log('captured',name);};
+// FORMAT=jpeg saves smaller files (e.g. for the README); the default is lossless PNG.
+const jpeg=process.env.FORMAT==='jpeg',shot=async(page,name)=>{await pause(400);writeFileSync(join(out,name+(jpeg?'.jpg':'.png')),await page.screenshot(jpeg?'jpeg':'png',jpeg?82:undefined));console.log('captured',name);};
 // Stage helper: rewrite the saved game, then reload every screen (same approach as the browser tests' stage() fixture).
 async function stage(fn){const db=new DatabaseSync(join(dir,'games.sqlite'));try{const row=db.prepare('SELECT id,state FROM rooms').get(),g=JSON.parse(row.state);fn(g);g.revision++;db.prepare('UPDATE rooms SET state=? WHERE id=?').run(JSON.stringify(g),row.id);}finally{db.close();}
   for(const p of pages){await p.reload();await p.waitFor(`document.querySelector('svg.board')`);}}

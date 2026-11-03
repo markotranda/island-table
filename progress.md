@@ -80,6 +80,8 @@ After every step: update this file, check usage (`mcp__ccd_session_mgmt__get_usa
   - Flake seen once: one failure of "discards, player and bank trades…" in 10 throttled full runs, message not captured; 9 later runs passed. If it recurs, capture the output first.
   - Not verified: how the sounds actually sound (headless tests can't hear). The owner should listen and say which to tune.
 
+- 2026-11-03: README refreshed (feature tour, screenshots in `docs/screenshots/`, play and test notes); `review-screens.mjs` gained `FORMAT=jpeg`. Pushed to origin. The owner is play-testing; more feedback will follow.
+
 ## Handoff prompt
 
 (Empty until work is parked.)
