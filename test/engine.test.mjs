@@ -201,7 +201,7 @@ test('the host removes people from the lobby, but not themselves, bots or anyone
 test('players pick a free colour or take a bot’s, new seats get the first free one, and colours last into the game and the rematch',()=>{
   let g=newGame('t');addPlayer(g,'a','A');addPlayer(g,'b','B');assert.deepEqual(g.players.map(p=>p.color),COLORS.slice(0,2));g.players[1].ready=true;
   for(const color of ['red',undefined,7])assert.throws(()=>apply(g,0,{type:'color',color},rng()),/one of the colours/);
-  assert.throws(()=>apply(g,0,{type:'color',color:COLORS[0]},rng()),/already your colour/);assert.throws(()=>apply(g,0,{type:'color',color:COLORS[1]},rng()),/Another player/);
+  assert.throws(()=>apply(g,0,{type:'color',color:COLORS[0]},rng()),/already your colour/);
   g=apply(g,0,{type:'color',color:COLORS[2]},rng());assert.equal(g.players[0].color,COLORS[2]);assert.equal(g.players[1].ready,true,'a colour changes no rule, so nobody un-readies');
   g=apply(g,1,{type:'color',color:COLORS[4]},rng());assert.equal(g.players[1].ready,true);assert.equal(g.players[1].color,COLORS[4]);
   addPlayer(g,'c','C');assert.equal(g.players[2].color,COLORS[0],'the first free colour, in palette order');
@@ -211,6 +211,23 @@ test('players pick a free colour or take a bot’s, new seats get the first free
   g.players.forEach(p=>p.ready=true);const chosen=g.players.map(p=>p.color);g=apply(g,0,{type:'start'},rng());assert.deepEqual(g.players.map(p=>p.color),chosen);assert.equal(view(g,0).colors,undefined);
   assert.throws(()=>apply(g,0,{type:'color',color:COLORS[5]},rng()),/before the game starts/);
   g.phase='finished';g=apply(g,0,{type:'rematch'},rng());assert.deepEqual(g.players.map(p=>p.color),chosen);
+});
+test('asking a person for their colour: they accept or decline, you can withdraw, and a request ends when either colour changes',()=>{
+  const table=()=>{const g=newGame('t','extended');['A','B','C','D'].forEach((n,i)=>addPlayer(g,'id'+i,n));return g;},ask=(g,p,q)=>apply(g,p,{type:'color',color:g.players[q].color},rng()),answer=(g,p,from,accept)=>apply(g,p,{type:'colorAnswer',from,accept},rng());
+  let g=table();g.players[1].ready=true;const [a,b,c]=g.players.map(p=>p.color);
+  g=ask(g,0,1);assert.deepEqual(g.swaps,[{from:'id0',to:'id1'}]);assert.equal(g.players[0].color,a,'asking changes nothing yet');assert.deepEqual(view(g,2).swaps,g.swaps);
+  assert.throws(()=>answer(g,2,'id0',true),/withdrawn/);assert.throws(()=>answer(g,0,'id0',true),/withdrawn/);assert.throws(()=>answer(g,1,'id2',true),/withdrawn/);
+  let d=answer(g,1,'id0',false);assert.deepEqual(d.swaps,[]);assert.equal(d.players[1].color,b);
+  d=answer(g,1,'id0',true);assert.deepEqual([d.players[0].color,d.players[1].color],[b,a]);assert.deepEqual(d.swaps,[]);assert.equal(d.players[1].ready,true,'a ready player who accepts stays ready');
+  d=apply(g,0,{type:'colorCancel'},rng());assert.deepEqual(d.swaps,[]);assert.deepEqual(apply(d,0,{type:'colorCancel'},rng()).swaps,[],'withdrawing twice is harmless');
+  d=ask(g,0,2);assert.deepEqual(d.swaps,[{from:'id0',to:'id2'}],'a new request replaces the old one');
+  d=ask(ask(g,2,1),3,1);assert.equal(d.swaps.length,3,'someone can have several requests');d=answer(d,1,'id2',true);assert.deepEqual(d.swaps,[],'accepting one ends the others, their colour is gone');assert.equal(d.players[1].color,c);
+  d=apply(g,0,{type:'color',color:COLORS[5]},rng());assert.deepEqual(d.swaps,[],'the asker picked another colour');
+  d=apply(g,1,{type:'color',color:COLORS[5]},rng());assert.deepEqual(d.swaps,[],'the colour asked for moved');
+  d=apply(g,0,{type:'kick',player:1},rng());assert.deepEqual(d.swaps,[]);d=apply(ask(g,2,3),0,{type:'kick',player:3},rng());assert.deepEqual(d.swaps,[{from:'id0',to:'id1'}],'only the leaver’s requests end');
+  d=apply(ask(table(),1,2),0,{type:'kick',player:1},rng());assert.deepEqual(d.swaps,[]);
+  d=structuredClone(g);d.players.forEach(p=>p.ready=true);const started=apply(d,0,{type:'start'},rng());assert.deepEqual(started.swaps,[],'starting ends open requests');assert.throws(()=>answer(started,1,'id0',true),/before the game/);assert.throws(()=>apply(started,0,{type:'colorCancel'},rng()),/before the game/);
+  const old=newGame('o');delete old.swaps;assert.deepEqual(upgrade(old).swaps,[]);
 });
 test('a fixed five-player game keeps chosen colours while spots are still drawn, with the sixth spot neutral',()=>{
   for(const seed of [1,2,3]){let g=newGame('t','extended','fixed');for(let i=0;i<5;i++){addPlayer(g,'id'+i,'P'+i);g.players[i].ready=true;}
