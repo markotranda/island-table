@@ -39,19 +39,12 @@
 .cost-icons{display:flex;gap:1px}
 .cost-vp{text-align:center;font-weight:700;color:#8a6a3a}
 .cost-foot{font-size:10px;color:#8a7a5c;margin:6px 4px 0}
-/* Around the table: labelled stats, a colour stripe for whoever is up, and the supply as card stacks. */
+/* Around the table: labelled stats and a colour stripe for whoever is up. */
 .player-meta{gap:4px}
 .stat{display:inline-flex;align-items:center;gap:3px}
 .player.active{box-shadow:inset 4px 0 0 var(--player),0 4px 12px #22333306}
 .avatar{border:1px solid #0000002e}
 .badge.award{background:#f1dfae;color:#6b4e1c}
-.supply-label{margin-top:22px}
-.supply{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-top:10px}
-.supply span{border:0;padding:0}
-.stack{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 4px;border-radius:6px;background:linear-gradient(var(--terrain) 0 56%,#fffaf0 56%);border:1px solid #cbbf9f;box-shadow:2px 2px 0 -1px #fffaf0,2px 2px 0 0 #cbbf9f,4px 4px 0 -1px #fffaf0,4px 4px 0 0 #cbbf9f}
-.stack b{font-size:11px;color:#3a3326}
-.stack.deck{background:#355650;border-color:#203a36;box-shadow:2px 2px 0 -1px #355650,2px 2px 0 0 #203a36,4px 4px 0 -1px #355650,4px 4px 0 0 #203a36}
-.stack.deck b,.deck-back{color:#f1e2b6}
 .deck-back{font-size:15px;line-height:20px}
 /* Game over: a proper moment with a scoreboard. */
 .winner{background:#f5e3b3 radial-gradient(circle at 85% 0%,#fff3cf,#0000 60%);border:2px solid #c9a24f;box-shadow:0 3px 0 #c9a24f,0 12px 24px #5a3b1a30}
@@ -132,7 +125,6 @@
 .control-sidebar .turn-card,.control-sidebar .winner{position:sticky;top:0;z-index:2}
 .cost-card{transform:rotate(-1.2deg);margin:10px 2px 16px}
 .cost-card:hover{transform:none}
-.deck-name{font-size:7.5px;letter-spacing:1px;font-weight:700}
 .scoreboard th{font-size:9.5px;color:#6b4e1c}
 .board-heading .ghost{background:#fbf3df;color:#2f2a20;border:1px solid #d6bd8b;box-shadow:0 3px 0 #c8ad78}
 .board-heading .ghost:hover:not(:disabled){background:#fffaf0}
@@ -188,9 +180,7 @@
 .award-tile{display:inline-flex;align-items:center;gap:5px;padding:4px 7px 4px 4px;border-radius:5px;background:#f2d58a linear-gradient(#ffffff40,#0000);border:1px solid #8a6a2a;box-shadow:0 2px 0 #8a6a2a;font-size:7.5px;font-weight:800;letter-spacing:.6px;color:#4a3410}
 .award-tile svg{width:18px;height:18px;background:#fbf3df;border-radius:50%;padding:2px}
 .award-tile b{font-size:10px}
-.mat-awards,.supply-awards{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.supply-awards{margin-top:14px}
-.supply-awards .award-tile{opacity:.75}
+.mat-awards{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 /* Trade offers lie on the table as paper slips with mini cards. */
 .trade-table{margin:14px 0}
 .offer{background:#fffaf0;border:1px solid #d6bd8b;border-left:5px solid var(--player);border-radius:6px;padding:10px 10px 8px;margin-top:8px;box-shadow:0 3px 6px #2a1c1033;transform:rotate(-.6deg)}
@@ -223,7 +213,6 @@
 .fan:empty{width:0;margin:0}
 .scoreboard td:first-child{white-space:nowrap}
 .scoreboard th{color:#4a3410;font-size:10px}
-.deck-name{color:#f1e2b6;font-size:8px}
 .log-list{padding-bottom:10px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .log-item b{font-style:normal}
@@ -408,3 +397,12 @@
 .board .building{pointer-events:auto}
 .lobby-seat.add-bot{width:100%;font:inherit;font-size:12px;cursor:pointer}.lobby-seat.add-bot:hover:not(:disabled){background:#fffaf03d;border-color:#f6e8cc;transform:translateY(-1px)}.lobby-seat .remove-bot{padding:4px 6px;margin-left:-4px;line-height:0}.lobby-seat .remove-bot .ui-ico{width:11px;height:11px}.player .takeover{margin-top:8px;width:100%;font-size:10px;padding:5px 8px;background:#fffdf6}
 .open-tables{margin-top:20px;border-top:1px solid var(--line);padding-top:15px}.open-tables>.eyebrow{margin-bottom:10px}.open-table{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;margin-bottom:8px;border:1px solid #e3d3ad;border-radius:10px;background:#fffaf0}.open-table>span{min-width:0;overflow-wrap:anywhere;font-size:13px}.open-table small{display:block;font-size:11px;margin-top:2px}
+
+/* The supply: a slim row under the turn card, always in view. */
+.supply-row{margin-top:14px;padding:8px 10px 9px;background:#f5ead1;color:#2f2a20;border:1px solid #d6bd8b;border-radius:10px;box-shadow:0 2px 0 #d6bd8b}
+.supply-top{display:flex;align-items:center;gap:5px;min-height:18px}.supply-top .eyebrow{color:#8a6a3a;font-size:9px;margin-right:auto}
+.supply-award{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#f2d58a;border:1px solid #8a6a2a}.supply-award svg{width:13px;height:13px}
+.supply-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:6px}
+.supply-chip{display:flex;flex-direction:column;align-items:center;padding-top:3px;border-radius:5px;overflow:hidden;background:linear-gradient(var(--terrain) 0 22px,#fffaf0 22px);border:1px solid #cbbf9f;line-height:1}
+.supply-chip svg{width:16px;height:16px}.supply-chip b{font-size:11px;padding:4px 0 3px;color:#3a3326}
+.supply-chip.deck{background:#355650;border-color:#203a36}.supply-chip.deck b{color:#f1e2b6}.supply-chip .deck-back{height:16px;line-height:16px;font-size:13px;color:#f1e2b6}

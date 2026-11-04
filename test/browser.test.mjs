@@ -114,6 +114,40 @@ async function stage(server,pages,fn){
   return result;
 }
 
+// A full table: the host and five bots on the extended map, to be staged from the starting roll straight into the host's
+// turn (hostTurn) so the bots stay idle. The host's name is as long as names get.
+async function sixSeats(browser,server,size={width:1280,height:720}){
+  const host=await browser.newPage(size);await createTable(host,server.host,'Bartholomew Longfellow J','extended','variable');
+  for(let n=1;n<=5;n++){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('[data-bot]').length===${n}`);}
+  await host.click('[data-command="ready"]');await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await host.click('[data-command="start"]');await host.waitFor(`document.querySelector('svg.board')`);
+  return host;
+}
+const hostTurn=g=>{g.active=0;g.primary=0;g.role=1;g.phase='action';g.dice=[4,5];g.offers=[];g.turn=14;};
+const supplyCounts=page=>page.eval(`Object.fromEntries([...document.querySelectorAll('[data-ui="supply"] [data-supply]')].map(e=>[e.dataset.supply,Number(e.querySelector('b').textContent)]))`);
+
+test('browser: the supply sits in the right column in every phase but the end, with unclaimed awards beside its label',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let host;
+  try{
+    host=await sixSeats(browser,server);
+    const shown=()=>host.eval(`[!!document.querySelector('.control-sidebar [data-ui="supply"]'),!!document.querySelector('.sidebar [data-ui="supply"]')]`);
+    assert.deepEqual(await shown(),[true,false],'during the starting roll');
+    const before=await supplyCounts(host);
+    await stage(server,[host],(g,{setHand})=>{hostTurn(g);setHand(0,{wood:4,brick:2,ore:1});g.deck.pop();});
+    const left=await supplyCounts(host);
+    assert.deepEqual(Object.keys(left),['wood','brick','wool','wheat','ore','deck']);
+    assert.deepEqual(left,{wood:before.wood-4,brick:before.brick-2,wool:before.wool,wheat:before.wheat,ore:before.ore-1,deck:before.deck-1});
+    assert.deepEqual(await host.eval(`[...document.querySelectorAll('[data-ui="supply"] [data-award]')].map(e=>e.dataset.award)`),['route','army']);
+    assert.equal(await host.eval(`[...document.querySelector('.sidebar').children].every(e=>e.classList.contains('player'))`),true,'the left column holds player cards only');
+    assert.match(await host.eval(`document.querySelector('.sidebar .player .points').dataset.tip`),/hidden Victory Point cards/);
+    await stage(server,[host],g=>{g.awards.army=0;});
+    assert.deepEqual(await host.eval(`[...document.querySelectorAll('[data-ui="supply"] [data-award]')].map(e=>e.dataset.award)`),['route'],'a held award leaves the supply');
+    for(const phase of ['setupSettlement','preRoll']){await stage(server,[host],g=>{g.phase=phase;g.setupIndex=0;});assert.deepEqual(await shown(),[true,false],phase);}
+    await stage(server,[host],g=>{g.phase='discard';g.discards=g.players.map((_,i)=>i===0?3:0);g.resumePhase='action';});assert.deepEqual(await shown(),[true,false],'discard');
+    await stage(server,[host],g=>{g.phase='finished';g.winner=0;delete g.discards;delete g.resumePhase;});assert.deepEqual(await shown(),[false,false],'finished');
+    assert.deepEqual(host.errors,[]);
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip,timeout:120000},async()=>{
   const server=await startServer(),browser=await launch();const pages=[];
   try{
