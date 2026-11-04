@@ -62,7 +62,7 @@ Then show the owner the final plan in short (decisions, steps, what the review c
 ## 7. Close
 
 - Status `done` in the item and the index; leftovers (not done, not verified, ideas that came up) become new open items, so nothing lives only in a log.
-- Update `CLAUDE.md` / `RULES.md` / README if commands, hooks, rules or architecture changed. If `docs/project-log.md` exists, append a short section (it is untracked on purpose; don't commit it).
+- Update `CLAUDE.md` / `RULES.md` / README if commands, hooks, rules or architecture changed. Append a short section to `docs/project-log.md` (the story of the project, for humans). The repo is public: before committing docs, check them for machine- or account-specific details (logins, which account is active, local paths, tokens) and keep those in memory instead.
 - **Refine this skill.** If something in the process went wrong or was clumsy (a question you should have asked, a review that missed something, a step too big), improve this file and say in one line what you changed.
 
 ## Work item template
