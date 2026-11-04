@@ -38,6 +38,7 @@ Create the item (next free number, short kebab slug) from the template below and
 - design per area (engine, bot, server, client, tests, docs) with function names and `data-*` hooks;
 - numbered steps, **one commit each**, each leaving `npm test` passing, each with its own tests;
 - what verification proves it works (tests that fail without the change, browser checks, screenshots, `THROTTLE=6`);
+- for every test-only hook the plan relies on (a stubbed browser API, a shortened timer, a recorder like `window.__sounds`), how it survives `stage()`'s reloads (`page.init`) and how a transient effect is caught without polling (record it in the page);
 - docs to update: `RULES.md` (digital conventions), `CLAUDE.md` (commands, hooks, architecture), README / How to play.
 
 **Too big for one session?** (Rough guide: more than ~6 steps, or touching engine + server + client heavily.) Split it into several work items, each a coherent, shippable slice that can be done in one session. The first item holds the overall plan; the others link back to it and say what they depend on. Note the split in every one of them.
