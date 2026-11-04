@@ -543,6 +543,19 @@ test('browser: the host seats bots who play their own turns, and a bot stands in
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
 
+test('browser: toppled lobby pieces lie on a flat shadow and stay inside their seat',{skip,timeout:60000},async()=>{
+  const server=await startServer(),browser=await launch();let host;
+  // Each outline traced through its own transforms, because a rotated element's bounding box overstates it. 1 is half the stroke.
+  const measure=`(()=>{const svg=document.querySelector('.seat-pieces'),box=svg.getBoundingClientRect(),k=box.width/svg.viewBox.baseVal.width,xs=[],ys=[];for(const path of svg.querySelectorAll('path')){const m=path.getScreenCTM(),n=path.getTotalLength();for(let i=0;i<=40;i++){const q=path.getPointAtLength(n*i/40).matrixTransform(m);xs.push(q.x);ys.push(q.y);}}const shadows=[...svg.querySelectorAll('ellipse')].map(e=>{const r=e.getBoundingClientRect();xs.push(r.left+k,r.right-k);ys.push(r.top+k,r.bottom-k);return r.width/r.height;});return {shadows,left:Math.min(...xs)-k-box.left,top:Math.min(...ys)-k-box.top,right:box.right-Math.max(...xs)-k,bottom:box.bottom-Math.max(...ys)-k};})()`;
+  const check=async state=>{const m=await host.eval(measure);assert.equal(m.shadows.length,2);for(const ratio of m.shadows)assert.ok(ratio>3,`${state}: the shadow lies flat, width/height ${ratio}`);for(const side of ['left','top','right','bottom'])assert.ok(m[side]>=0,`${state}: the piece is cut off at the ${side}: ${m[side]}`);};
+  try{
+    host=await browser.newPage();await createTable(host,server.host,'Ana','base','variable');
+    await check('not ready');
+    await host.click('[data-command="ready"]');await host.waitFor(`document.querySelector('.lobby-seat.is-ready')`);
+    await check('ready');
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: the host removes a friend from the lobby and makes the table private',{skip,timeout:90000},async()=>{
   const server=await startServer(),browser=await launch();let host,guest;
   try{

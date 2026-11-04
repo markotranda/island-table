@@ -385,3 +385,9 @@ Plan: [`work/010-bigger-map-fixed-sidebar.md`](work/010-bigger-map-fixed-sidebar
 - **Six cards, no scrolling.** The left column holds only player cards, all one size, so nothing moves when the turn passes. A held award lights the matching stat in gold.
 - **The supply** is a slim row under the turn card, in view all game.
 - **Build is never hidden.** Development cards overlap when space is tight; before, a few kinds of card pushed the Build buttons under the story log at 1280 wide.
+
+## 17. Pieces that fall over properly
+
+Plan: [`work/012-toppled-piece-shadow.md`](work/012-toppled-piece-shadow.md).
+
+- **A flat shadow.** In the lobby, a player who isn't ready has their pieces lying on their side. Their shadow used to tip over with them and stand upright. Now it stays on the table, and the pieces lie on it.
