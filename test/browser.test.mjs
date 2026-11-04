@@ -189,6 +189,7 @@ test('browser: phone-width home and lobby fit without horizontal scrolling',{ski
     page=await browser.newPage({width:375,height:812});
     await page.goto(server.host);assert.ok(await noOverflow(page),'home');
     await createTable(page,server.host,'Solo','base','fixed');assert.ok(await noOverflow(page),'lobby');
+    assert.ok(await page.eval(`(()=>{const c=document.querySelector('.lobby-seat.own').getBoundingClientRect(),all=[...document.querySelectorAll('[data-ui="colors"] [data-color]')];return all.length===6&&all.every(e=>{const r=e.getBoundingClientRect();return r.left>=c.left&&r.right<=c.right&&r.bottom<=c.bottom;});})()`),'the swatches stay inside the seat card');
     assert.match(await page.text('[data-ui="start-hint"]'),/at least one more player/,'a lone host is told why they cannot start');
     await page.click('[data-ui="invite"]');
     assert.match(await page.waitFor('window.__copied.at(-1)'),new RegExp(`^${server.invite.replace(/[.]/g,'\\.')}/\\?room=[a-f0-9]{12}$`));
@@ -463,4 +464,39 @@ test('browser: open tables list public lobbies on the home screen and join from 
     await third.waitFor(`!document.querySelector('[data-open="${room}"]')`,{timeout:12000,message:'A private table is still listed'});
     assert.deepEqual([...host.errors,...guest.errors,...third.errors],[]);
   }finally{for(const p of [host,guest,third])await p?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+test('browser: choosing a colour in the lobby: free, from a bot, or by asking a person, and it lasts into the game',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[];
+  try{
+    for(let i=0;i<3;i++)pages.push(await browser.newPage());const [host,guest,third]=pages;
+    await createTable(host,server.host,'Host','base','variable');const room=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);
+    await joinByInvite(guest,`${server.invite}/?room=${room}`,'Guest');await joinByInvite(third,`${server.invite}/?room=${room}`,'Third');
+    const palette=await host.eval(`[...document.querySelectorAll('[data-ui="colors"] [data-color]')].map(e=>e.dataset.color)`);assert.equal(palette.length,6);
+    for(const p of pages)assert.equal(await p.eval(`document.querySelectorAll('[data-ui="colors"]').length`),1,'only your own card has swatches');
+    const seen=(p,seat,hex)=>p.waitFor(`document.querySelector('[data-seat="${seat}"]')?.dataset.seatColor==='${hex}'`,{message:`seat ${seat} is not ${hex}`}),everywhere=async(seat,hex)=>{for(const p of pages)await seen(p,seat,hex);},swatch=hex=>`[data-color="${hex}"]`;
+    // Two people pick at the same moment: both land, whichever reaches the server second is retried.
+    const [blue,red,orange,white,purple,green]=palette;
+    await Promise.all([host.click(swatch(green)),guest.click(swatch(purple))]);await everywhere(0,green);await everywhere(1,purple);
+    assert.equal(await host.eval(`document.querySelector('${swatch(green)}').dataset.state`),'mine');await host.click(swatch(green));
+    assert.equal(await host.eval(`document.querySelector('${swatch(purple)}').dataset.state`),'person');
+    // Asking a person: the two of them see it, it survives a reload, and it can be withdrawn, declined or accepted.
+    await third.waitFor(`document.querySelector('${swatch(green)}')?.dataset.state==='person'`);await third.click(swatch(green));
+    await third.waitFor(`document.querySelector('[data-ui="color-asked"]')?.textContent.includes('Asked Host for Green')`);
+    await host.waitFor(`document.querySelector('[data-swap-accept]')`);assert.match(await host.text('[data-ui="color-ask"]'),/Third asks for your Green and offers Orange/);
+    assert.equal(await guest.eval(`!!document.querySelector('[data-swap-accept],[data-ui="color-asked"]')`),false,'nobody else sees the question');
+    await host.reload();await host.waitFor(`document.querySelector('[data-swap-accept]')`,{message:'The request did not survive a reload'});
+    await third.click(swatch(green));await host.waitFor(`!document.querySelector('[data-swap-accept]')`,{message:'Withdrawing did not reach the other card'});await third.waitFor(`!document.querySelector('[data-ui="color-asked"]')`);
+    await third.waitFor(`document.querySelector('${swatch(green)}')?.dataset.state==='person'`);await third.click(swatch(green));await host.waitFor(`document.querySelector('[data-swap-decline]')`);await host.click('[data-swap-decline]');
+    await third.waitFor(`!document.querySelector('[data-ui="color-asked"]')`,{message:'Declining did not reach the asker'});await everywhere(0,green);await everywhere(2,orange);
+    await third.waitFor(`document.querySelector('${swatch(green)}')?.dataset.state==='person'`);await third.click(swatch(green));await host.waitFor(`document.querySelector('[data-swap-accept]')`);await host.click('[data-swap-accept]');
+    await everywhere(0,orange);await everywhere(2,green);await third.waitFor(`!document.querySelector('[data-ui="color-asked"]')`);
+    // A bot gives up its colour at once and takes the one you left.
+    await host.click('[data-command="addBot"]');await everywhere(3,blue);await host.waitFor(`document.querySelector('${swatch(blue)}')?.dataset.state==='bot'`);
+    await host.click(swatch(blue));await everywhere(0,blue);await everywhere(3,orange);
+    for(const p of pages){await p.click('[data-command="ready"]');await p.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
+    await guest.waitFor(`document.querySelector('${swatch(white)}')?.dataset.state==='free'`);await guest.click(swatch(white));await everywhere(1,white);assert.equal(await guest.eval(`document.querySelector('[data-seat="1"]').classList.contains('is-ready')`),true,'changing colour keeps you ready');
+    await host.waitFor(`!document.querySelector('[data-command="start"]')?.disabled`);await host.click('[data-command="start"]');for(const p of pages)await p.waitFor(`document.querySelector('svg.board')`);
+    assert.deepEqual(await guest.eval(`[...document.querySelectorAll('.player')].map(e=>e.style.getPropertyValue('--player'))`),[blue,white,green,orange],'the chosen colours are the game colours');
+    assert.deepEqual(pages.flatMap(p=>p.errors),[]);
+  }finally{for(const p of pages)await p.close().catch(()=>{});await browser?.close();await server.stop();}
 });
