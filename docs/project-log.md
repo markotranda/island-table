@@ -402,3 +402,7 @@ Players said they missed that it was their turn, and forgot to end it.
 - **The tab title** reads "● Your turn" while the game waits on you, so it shows from other tabs.
 - **Turn alerts.** A bell in the top bar turns on a system notification when your turn starts while the tab is hidden. Browsers offer these only over HTTPS or on localhost.
 - **End turn glows** softly once you have nothing left to do but trade with players: nothing to build, buy or play, and no supply trade that would make a build possible. After half a minute it glows more, with one quiet tone.
+
+## 19. Steadier browser tests
+
+Three browser tests failed now and then for reasons that had nothing to do with the game. Two of them read the screen right after a reload, before the live connection was back, so anything that depends on who is online wasn't drawn yet. The test helper that sets up a situation now waits for that connection. Adding five bots could lose a click while the lobby redrew, so the test now clicks again when a bot doesn't appear. The starting-roll test could miss the 3-second "goes first" moment when the machine was busy, so each page now notes that moment itself instead of the test checking it from outside.

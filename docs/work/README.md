@@ -6,8 +6,6 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Status | Next step |
 |---|---|---|---|
-| 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | planned | Wait for the stream instead of reading once; longer bot-seat wait |
-| 011 | [Starting-roll test can miss the 3 s hold under load](011-starting-roll-test-flake.md) | planned | Record the hold in the page instead of polling |
 | 005 | [Checks that tests could not do](005-unverified-checks.md) | waiting on owner | Owner: sounds, phone, steal tooltip, human-vs-bots game. Claude: screenshots at 1280×720, extended board, phone |
 | 006 | [Tooltips left out in round 2](006-tooltip-gaps.md) | questions | Ask the owner whether player-card and robber tips are still wanted |
 
@@ -15,6 +13,8 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Finished |
 |---|---|---|
+| 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | 2026-11-04 |
+| 011 | [Starting-roll test can miss the 3 s hold under load](011-starting-roll-test-flake.md) | 2026-11-04 |
 | 014 | [Noticing your turn, and remembering to end it](014-turn-reminders.md) | 2026-11-04 |
 | 012 | [Toppled lobby pieces had a sideways shadow](012-toppled-piece-shadow.md) | 2026-11-04 |
 | 010 | [Bigger map, fixed player sidebar, new home for the supply](010-bigger-map-fixed-sidebar.md) | 2026-11-04 |

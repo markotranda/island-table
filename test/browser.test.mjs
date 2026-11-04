@@ -34,13 +34,16 @@ async function joinByInvite(page,link,name){
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 // Everyone taps their dice for the first turn at the same moment, again after a tie, until the starting roll is over.
 // Returns the pages that saw the result held on screen ("… goes first!", no dice left to roll) before the card went away.
+// The hold lasts 3 s, too short to rely on polling every page in turn under load, so each page records it itself (window.__heldFirst).
+const HELD=`document.querySelector('[data-ui="order"][data-held="first"] h2')?.textContent.includes('goes first')&&!document.querySelector('[data-command="firstRoll"]')`;
 async function rollForStart(pages){
-  const held=new Set();
+  const held=new Set(),saw=async page=>{if(await page.eval('window.__heldFirst'))held.add(page);};
+  await Promise.all(pages.map(page=>page.eval(`(()=>{window.__heldFirst=false;window.__heldWatch?.disconnect();const check=()=>{if(${HELD})window.__heldFirst=true;};window.__heldWatch=new MutationObserver(check);window.__heldWatch.observe(document,{subtree:true,childList:true,attributes:true,characterData:true});check();})()`)));
   for(let step=0;step<80;step++){
     const ready=[];for(const page of pages)if(await page.has('[data-command="firstRoll"]'))ready.push(page);
     if(ready.length)await Promise.all(ready.map(page=>page.click('[data-command="firstRoll"]').catch(()=>{})));
-    let open=false;for(const page of pages)if(await page.has('[data-ui="order"]')){open=true;if(await page.eval(`document.querySelector('[data-ui="order"][data-held="first"] h2')?.textContent.includes('goes first')&&!document.querySelector('[data-command="firstRoll"]')`))held.add(page);}
-    if(!open||held.size===pages.length)return held;await pause(150);
+    let open=false;for(const page of pages){if(await page.has('[data-ui="order"]'))open=true;await saw(page);}
+    if(!open||held.size===pages.length){for(const page of pages)await saw(page);await Promise.all(pages.map(page=>page.eval('window.__heldWatch?.disconnect()')));return held;}await pause(150);
   }
   throw new Error('The starting roll did not finish');
 }
@@ -110,7 +113,8 @@ async function stage(server,pages,fn){
     result=fn(g,{setHand,deal,topDeck});g.revision++;
     db.prepare('UPDATE rooms SET state=? WHERE id=?').run(JSON.stringify(g),row.id);
   }finally{db.close();}
-  for(const page of pages){await page.reload();await page.waitFor(`document.querySelector('svg.board')`);}
+  // Wait for the live stream too: until it connects, nothing that depends on who is online (Away buttons, the connection badge) is drawn.
+  for(const page of pages){await page.reload();await page.waitFor(`document.querySelector('svg.board')&&!document.querySelector('.connection.offline')`,{message:'the staged page did not reconnect'});}
   return result;
 }
 
@@ -118,7 +122,8 @@ async function stage(server,pages,fn){
 // turn (hostTurn) so the bots stay idle. The host's name is as long as names get.
 async function sixSeats(browser,server,size={width:1280,height:720}){
   const host=await browser.newPage(size);await createTable(host,server.host,'Bartholomew Longfellow J','extended','variable');
-  for(let n=1;n<=5;n++){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('[data-bot]').length===${n}`);}
+  // A live update can redraw the lobby between press and release and swallow a click, so add again if the bot never came.
+  for(let n=1;n<=5;n++)for(let tries=0;;tries++){if(await host.eval(`document.querySelectorAll('[data-bot]').length`)<n)await host.click('[data-command="addBot"]');try{await host.waitFor(`document.querySelectorAll('[data-bot]').length>=${n}`,{timeout:10000});break;}catch(e){if(tries>=2)throw e;}}
   await host.click('[data-command="ready"]');await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await host.click('[data-command="start"]');await host.waitFor(`document.querySelector('svg.board')`);
   return host;
 }
@@ -164,7 +169,7 @@ test('browser: during a game the name and options sit in the corners and the map
     const off=await host.eval(`(()=>{const l=document.querySelector('.connection-label').getBoundingClientRect(),t=document.querySelector('.turn-card').getBoundingClientRect(),w=document.querySelector('.board-wrap').getBoundingClientRect();return {seen:l.width>0,clearTurn:l.bottom<=t.top,clearMap:l.left>=w.right};})()`);
     assert.deepEqual(off,{seen:true,clearTurn:true,clearMap:true});
     await host.resize(1280,720);await host.reload();await host.waitFor(`document.querySelector('svg.board')`);
-    assert.equal(await host.eval(`document.querySelector('.connection').classList.contains('offline')&&document.querySelector('.connection-label').textContent`),false,'the live stream clears it');
+    await host.waitFor(`!document.querySelector('.connection').classList.contains('offline')`,{message:'the live stream clears it'});
     // The options still work, and the rules window covers them.
     await host.click('[data-ui="help"]');await host.waitFor(`document.querySelector('dl.help')`);
     assert.equal(await host.eval(`(()=>{const b=document.querySelector('[data-ui="home"]').getBoundingClientRect();return !!document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('.topbar');})()`),false,'an open window sits above the corners');
