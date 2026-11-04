@@ -1,6 +1,6 @@
 # 007: Keep the starting roll on screen for a moment
 
-**Status:** done · **Commits:** …
+**Status:** done · **Commits:** c73da98
 
 ## Feedback
 2026-11-04, owner:
@@ -52,7 +52,7 @@ No second round: the only blocking finding was already handled, the rest are app
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
-| 1 | done | (this commit) | `npm test` and `THROTTLE=6 npm test` pass (48) |
+| 1 | done | c73da98 | `npm test` and `THROTTLE=6 npm test` pass (48) |
 
 ## Not verified
 - The look of the fade and of the held card on a phone (no screenshot taken).
