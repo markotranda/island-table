@@ -1,6 +1,6 @@
 # 009: Choosing a colour in the lobby
 
-**Status:** in progress · **Commits:** –
+**Status:** done · **Commits:** 6b1cae8, 1642ac7, d2fb2fd, docs commit after them
 
 ## Feedback
 2026-11-04, owner:
@@ -80,8 +80,15 @@ Round 1: no blocking findings, APPROVE. Accepted: asker id in `colorAnswer` (1),
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
+| 1 | done | 6b1cae8 | Colours chosen and kept in the engine |
+| 2 | done | 1642ac7 | Swap requests |
+| 3 | done | d2fb2fd | Swatches. First layout wrapped the sixth swatch at 860px; swatches now shrink to stay on one row |
+| 4 | done | see git log | Docs, review screenshot |
+
+Gotcha: under `THROTTLE=6` the full suite once timed out in `browser: discards, player and bank trades…` waiting for `.road` count 8 (`test/browser.test.mjs:331`). It passed 3 of 3 alone on this branch and on the commit before this work, and the next full `THROTTLE=6` run passed 57 of 57, so it looks like load, not this change.
 
 ## Not verified
+Tapping swatches on a real phone (checked at 375px in headless Edge only). Long player names on narrow seat cards still break mid-word at about 860px ("Tobia/s"), as they did before this work.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. Step 1 is next.
+Read `CLAUDE.md`, then this file. Finished; nothing left to do.

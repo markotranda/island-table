@@ -368,3 +368,11 @@ Plan: [`work/008-open-tables.md`](work/008-open-tables.md), reviewed by a second
 - **Public or private.** New tables are public; the host switches Visibility in the lobby without making anyone ready up again. Tables from before stay private.
 - **Kicking.** The host removes anyone from the lobby with the × on their seat; they land on the home screen with a message. In a game, a bot standing in still covers people who leave.
 - **Cleanup.** A lobby nobody has had open for an hour is deleted with its seats. Games under way and finished games are kept.
+
+## 15. Choosing a colour
+
+Plan: [`work/009-lobby-colours.md`](work/009-lobby-colours.md), reviewed by a second agent (approved, eleven small notes folded in).
+
+- **Your colour, not your seat's.** Your seat card in the lobby has six swatches. A free colour is yours at once, a bot swaps with you, and a person gets a request to accept or decline.
+- **It stays.** Someone leaving no longer recolours the others, and a rematch keeps everyone's colour.
+- **Five players on a fixed island.** The rulebook's colour draw really decides who starts where, so the starting spots are still drawn at random and the chosen colours stay.
