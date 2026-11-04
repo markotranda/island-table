@@ -55,7 +55,7 @@ Then show the owner the final plan in short (decisions, steps, what the review c
 ## 6. Implement and verify
 
 - Do the steps in order. After each step: `npm test` passes, commit (one commit per step), then update the item: what was done, the commit hash, surprises and gotchas, what's next.
-- Verify for real: tests that fail without the change, browser tests for UI (selectors on `data-ui`/`data-command`…), screenshots via `scripts/review-screens.mjs` for visual changes (send them to the owner), `THROTTLE=6 npm test` before the last commit.
+- Verify for real: tests that fail without the change, browser tests for UI (selectors on `data-ui`/`data-command`…), screenshots via `scripts/review-screens.mjs` for visual changes (send them to the owner), `THROTTLE=6 npm test` before the last commit. Send its output to a file (in the scratchpad), so a one-off failure can still be read afterwards.
 - Say what was **not** verified (e.g. sound by ear, a real phone). Those go into the item's "Not verified" list, and into an open item if the owner has to check them.
 - Check session usage after each step if a usage tool is available (e.g. `mcp__ccd_session_mgmt__get_usage`). If the 5-hour limit, weekly limit or context is **over 85%**, park: commit what's finished, set the status to `parked`, write the handoff prompt in the item, update the index, and stop.
 
