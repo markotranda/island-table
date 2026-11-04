@@ -155,6 +155,7 @@ test('browser: during a game the name and options sit in the corners and the map
     const layout=()=>host.eval(`(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(),inside=(a,b)=>a.left>=b.left-.5&&a.right<=b.right+.5,side=r('.control-sidebar'),left=r('.sidebar'),wrap=r('.board-wrap'),opts=[...document.querySelectorAll('.topbar .right>*')].map(e=>e.getBoundingClientRect()),col=(l,w)=>({left:l,right:l+w}),gs=getComputedStyle(document.documentElement);return {wrapTop:wrap.top,brandH:r('.brand-text').bottom<=left.top+.5,brandIn:inside(r('.brand-text'),col(0,left.width)),brandW:r('.brand-text').right<=left.width,optsIn:opts.every(o=>o.left>=side.left-.5&&o.right<=innerWidth+.5&&o.bottom<=side.top+.5),hitsBoard:opts.some(o=>o.left<wrap.right&&o.right>wrap.left),pageW:document.documentElement.scrollWidth<=innerWidth,wrapH:wrap.height,free:innerHeight-r('.hand').height};})()`);
     for(const [w,h] of [[1920,1080],[1440,900],[1280,720],[1100,700],[900,700]]){
       await host.resize(w,h);await pause(150);const l=await layout();
+      assert.ok(await host.eval(`(()=>{const a=document.querySelector('.turn-card>.eyebrow'),b=document.querySelector('.turn-card .seal').getBoundingClientRect(),n=document.createRange();n.selectNodeContents(a);return n.getBoundingClientRect().right<=b.left;})()`),`the turn label clears its seal at ${w}x${h}`);
       assert.equal(l.wrapTop,0,`map reaches the top at ${w}x${h}`);assert.equal(l.wrapH,l.free,`map takes all height above the hand at ${w}x${h}`);
       assert.ok(l.brandIn&&l.brandH,`name stays in its corner at ${w}x${h}`);assert.ok(l.optsIn&&!l.hitsBoard,`options stay in their corner at ${w}x${h}`);assert.ok(l.pageW,`no sideways scroll at ${w}x${h}`);
     }
@@ -202,6 +203,31 @@ test('browser: six player cards always fit without scrolling and never change si
     assert.deepEqual(await host.eval(`(()=>{const c=document.querySelector('.sidebar .player.active');return [!!c.querySelector('[data-takeover="1"]'),!!c.querySelector('.badge')];})()`),[true,false]);
     // Phone: the cards flow, with nothing spilling out.
     await host.resize(390,844);await pause(150);const phone=await cards();assert.ok(phone.statsIn,'stats stay inside phone cards');assert.ok(await host.eval('document.documentElement.scrollWidth<=innerWidth'));assert.ok(await host.has('.control-sidebar [data-ui="supply"]'));
+    assert.deepEqual(host.errors,[]);
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
+test('browser: a full hand of development cards never pushes the Build buttons away',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let host;
+  try{
+    host=await sixSeats(browser,server);
+    await stage(server,[host],(g,{setHand,deal})=>{hostTurn(g);setHand(0,{wood:3,brick:3,wool:3,wheat:3,ore:3});for(const t of ['knight','monopoly','invention','roads','vp'])deal(0,t);});
+    for(const [w,h] of [[1920,1080],[1401,800],[1400,800],[1280,720],[1251,700],[1250,700],[1200,700],[1150,700],[1149,700],[1100,700],[1000,600],[1000,545],[860,700]]){
+      await host.resize(w,h);await pause(150);
+      const m=await host.eval(`(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(),b=r('.build-bar'),hand=r('.hand'),side=r('.control-sidebar'),c=[...document.querySelectorAll('.dev-card')].map(e=>e.getBoundingClientRect()),last=c.at(-1);return {inHand:b.right<=hand.right+.5,clearSide:b.right<=side.left+.5,sameRow:last.top<b.bottom&&last.bottom>b.top,clearBuild:last.right<=b.left+.5,steps:c.slice(1).map((e,i)=>e.left-c[i].left),handBottom:hand.bottom,page:document.documentElement.scrollHeight,buttonsOk:[...document.querySelectorAll('[data-ui="build-bar"] button')].every(e=>{const q=e.getBoundingClientRect();return q.bottom<=document.documentElement.scrollHeight;}),sideways:document.documentElement.scrollWidth<=innerWidth};})()`),at=`${w}x${h}`;
+      assert.ok(m.inHand,`Build stays inside the hand at ${at}`);assert.ok(m.clearSide,`Build clears the right column at ${at}`);
+      if(m.sameRow)assert.ok(m.clearBuild,`development cards stop before Build at ${at}`);
+      assert.ok(Math.min(...m.steps)>=15.5,`each card shows at least 16px at ${at}: ${m.steps}`);
+      assert.ok(m.handBottom<=m.page&&m.buttonsOk,`the hand can be reached at ${at}`);assert.ok(m.sideways,`no sideways scroll at ${at}`);
+    }
+    // Few cards leave Build beside the hand, so the map keeps that height.
+    await stage(server,[host],g=>{const p=g.players[0];g.deck.push(...p.cards.splice(1).map(c=>c.type));});
+    await host.resize(1100,700);await pause(150);assert.ok(await host.eval(`(()=>{const a=document.querySelector('.hand-cards').getBoundingClientRect(),b=document.querySelector('.build-bar').getBoundingClientRect();return b.left>=a.right&&b.top<a.bottom;})()`),'one kind of card leaves Build on the same row at 1100 wide');
+    await stage(server,[host],(g,{deal})=>{for(const t of ['monopoly','invention','roads','vp'])deal(0,t);});
+    // A card that overlaps still plays, from the part of it that shows.
+    await host.resize(1280,720);await pause(150);
+    assert.ok(await host.eval(`[...document.querySelectorAll('.dev-card')].every(e=>{const q=e.getBoundingClientRect();return document.elementFromPoint(q.left+8,q.top+q.height/2)?.closest('.dev-card')===e;})`),'the visible edge of every card belongs to that card');
+    await host.eval(`(()=>{const q=document.querySelector('[data-type="invention"]').getBoundingClientRect();document.elementFromPoint(q.left+8,q.top+q.height/2).click();})()`);await host.waitFor(`document.getElementById('invention')`,{message:'an overlapped card did not play'});
     assert.deepEqual(host.errors,[]);
   }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
 });
