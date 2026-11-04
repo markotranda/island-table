@@ -444,3 +444,8 @@
 @media(min-width:851px) and (max-width:1149px){.hand-row:has(.dev-slot:nth-child(2)){flex-wrap:wrap;row-gap:10px}.hand-row:has(.dev-slot:nth-child(2)) .build-bar{flex:0 0 100%;align-items:flex-end}}
 @media(min-width:851px) and (max-width:1091px){.hand-row:has(.dev-slot){flex-wrap:wrap;row-gap:10px}.hand-row:has(.dev-slot) .build-bar{flex:0 0 100%;align-items:flex-end}}
 @media(min-width:851px) and (max-width:1039px){.hand-row{flex-wrap:wrap;row-gap:10px}.build-bar{flex:0 0 100%;align-items:flex-end}}
+.turn-banner{position:absolute;transform:translate(0,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 16px;background:color-mix(in srgb,var(--player) 62%,transparent);border-block:2px solid color-mix(in srgb,var(--player) 85%,#fff);box-shadow:0 10px 30px #1a2a2c33;color:#142c37;text-align:center;backdrop-filter:blur(2px)}
+.turn-banner b{font:400 54px/1.05 Georgia,"Times New Roman",serif;letter-spacing:-1px;text-shadow:0 1px 0 #fff8,0 0 18px #fff6}
+.turn-banner span{font-size:12px;font-weight:750;letter-spacing:2px;text-transform:uppercase}
+.turn-banner.small{padding:9px 16px;background:color-mix(in srgb,var(--player) 42%,transparent);box-shadow:none}.turn-banner.small b{font-size:28px}
+@media(max-width:620px){.turn-banner b{font-size:38px}.turn-banner.small b{font-size:22px}}

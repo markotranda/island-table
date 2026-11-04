@@ -301,6 +301,36 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
 
+// Turn banners are recorded in the page (window.__banners: 'me' for your own, the player's name for someone else's), because a
+// band is on screen for only a couple of seconds and polling could miss it on a slow machine.
+const banners=pages=>Promise.all(pages.map(p=>p.eval('window.__banners=[]')));
+const sawBanner=(page,who)=>page.waitFor(`window.__banners?.includes(${JSON.stringify(who)})`,{message:`Expected the "${who}" turn banner`});
+test('browser: a band across the board says whose turn it is, and a hidden tab sees its own when it comes back',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[];
+  try{
+    pages=await seatTable(browser,server,3,'variable');await banners(pages);
+    let active=await playSetup(pages);
+    // Every setup placement of your own gets the band; nobody gets one for someone else's placement, only for the first roll after setup.
+    for(const page of pages)assert.ok((await page.eval('window.__banners')).filter(b=>b!=='me').length<=1,'no bands for others during setup');
+    for(const page of pages)await sawBanner(page,'me');
+    const name=async page=>(await page.eval('document.querySelector(".player-name small")?.parentElement.firstChild.textContent')).trim();
+    for(let turn=0;turn<2;turn++){
+      await banners(pages);await playTurn(pages,active);const next=await waitActive(pages,active),who=await name(next);
+      await sawBanner(next,'me');for(const page of pages)if(page!==next)await sawBanner(page,who);
+      assert.ok(await next.eval(`(()=>{const b=document.querySelector('[data-ui="turn-banner"][data-who="me"]');return !b||b.textContent.includes('Roll the dice');})()`));
+      active=next;
+    }
+    // A tab in the background doesn't waste its band: it plays when the tab is visible again, if it is still that turn.
+    const after=pages[(pages.indexOf(active)+1)%pages.length];
+    // Hide the next player's tab before the turn reaches it: the page sees document.hidden and a visibilitychange later.
+    await after.eval(`window.__banners=[];window.__hidden=true;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__hidden});`);
+    await playTurn(pages,active);const next=await waitActive(pages,active);assert.equal(next,after,'turns go round the table');
+    await pause(400);assert.deepEqual(await after.eval('window.__banners'),[],'no band while hidden');
+    await after.eval(`window.__hidden=false;document.dispatchEvent(new Event('visibilitychange'))`);await sawBanner(after,'me');
+    for(const page of pages)assert.deepEqual(page.errors,[]);
+  }finally{for(const page of pages)await page.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: phone-width home and lobby fit without horizontal scrolling',{skip,timeout:60000},async()=>{
   const server=await startServer(),browser=await launch();let page;
   try{

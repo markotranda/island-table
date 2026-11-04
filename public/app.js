@@ -329,7 +329,22 @@ function playEffects(){if(!state?.board)return;const still=matchMedia('(prefers-
   if(f.kind==='steal'&&!still){const r=f.secret?.r;fly(r?icon(r,30):'<span class="fly-back"></span>',()=>cardOf(f.from,r),()=>cardOf(f.p,r),250);}}
   // Your turn starting is a change of state rather than an entry: chime once per turn, never for the state a page first loads.
   const turnKey=`${state.turn}:${state.setupIndex??''}:${state.active}:${state.role}`,mine=state.active===me&&(['preRoll','setupSettlement'].includes(state.phase)||state.phase==='action'&&state.role===2);
-  if(turnCue===null)turnCue=turnKey;else if(mine&&turnCue!==turnKey){turnCue=turnKey;cue('turn');}}
+  // Everyone else sees a quieter band when a full turn (the roll, or paired player 2's phase) starts, whatever phase a redraw first sees
+  // (a bot may have rolled already), but not for every setup placement.
+  const theirs=state.active!==me&&!['lobby','order','setupSettlement','setupRoad','finished'].includes(state.phase);
+  if(turnCue===null)turnCue=turnKey;else if((mine||theirs)&&turnCue!==turnKey){turnCue=turnKey;if(mine)cue('turn');turnStart(mine,turnKey);}}
+// A band across the board in the player's colour says whose turn just started. It lives in the #fx layer, so redraws don't restart it.
+// A hidden tab would play it unseen: your own band waits until the tab is visible again, if it is still that turn.
+let bannerWait=null;
+function turnStart(mine,key){if(document.hidden){bannerWait=mine?key:null;return;}bannerWait=null;turnBanner(mine);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden||!bannerWait||!state?.board)return;const key=bannerWait;bannerWait=null;if(key===turnCue&&state.active===state.me)turnBanner(true);});
+function turnBanner(mine){const wrap=document.querySelector('.board-wrap')?.getBoundingClientRect(),p=state.players[state.active];if(!wrap?.width||!p)return;
+  const top=Math.max(wrap.top,0),bottom=Math.min(wrap.bottom,innerHeight),y=bottom-top>120?(top+bottom)/2:innerHeight/2,next=state.phase==='preRoll'?'Roll the dice':state.phase.startsWith('setup')?'Place a settlement':'Your phase: build, buy or trade with the supply';
+  fxLayer().querySelector('.turn-banner')?.remove();if(Array.isArray(window.__banners))window.__banners.push(mine?'me':p.name);
+  const el=Object.assign(document.createElement('div'),{className:`turn-banner${mine?'':' small'}`,innerHTML:mine?`<b>Your turn</b><span>${next}</span>`:`<b>${escape(p.name)}’s turn</b>`});
+  Object.assign(el.dataset,{ui:'turn-banner',who:mine?'me':'other'});el.style.cssText=`--player:${p.color};left:${wrap.left}px;width:${wrap.width}px;top:${y}px`;fxLayer().append(el);
+  const still=matchMedia('(prefers-reduced-motion: reduce)').matches,frames=still?[{opacity:0},{opacity:1,offset:.15},{opacity:1,offset:.8},{opacity:0}]:[{opacity:0,transform:'translate(-40%,-50%) skewX(-8deg)'},{opacity:1,transform:'translate(0,-50%)',offset:.14},{opacity:1,transform:'translate(0,-50%)',offset:.8},{opacity:0,transform:'translate(30%,-50%) skewX(8deg)'}];
+  el.animate(frames,{duration:mine?2600:1700,easing:'ease-in-out',fill:'both'}).finished.then(()=>el.remove(),()=>el.remove());}
 // Scrolled panels keep their place across live redraws instead of jumping back to the top.
 const SCROLLERS=['.log-list','.trade-panel','.discard-card'];
 function render(preserve=false){if(state?.board)noticeEvents();if(state?.phase==='lobby')turnCue='lobby';const scrolls=SCROLLERS.map(q=>app.querySelector(q)?.scrollTop??0),fields=preserve?[...app.querySelectorAll('form input,form select')].map(e=>({form:e.form.id,name:e.name,value:e.value,focused:document.activeElement===e})):[];app.innerHTML=(state?(state.phase==='lobby'?lobby():game()):home())+victoryHtml()+discardHtml()+modalHtml();for(const f of fields){const el=document.getElementById(f.form)?.elements.namedItem(f.name);if(el){el.value=f.value;if(f.focused)el.focus();}}SCROLLERS.forEach((q,i)=>{const el=app.querySelector(q);if(el&&scrolls[i])el.scrollTop=scrolls[i];});syncPickers();playEffects();retip();watchTables();clearTimeout(render.hold);const held=state?.board&&heldOrder();if(held)render.hold=setTimeout(()=>render(true),HOLD-since(held)+30);}
