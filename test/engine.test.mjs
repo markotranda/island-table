@@ -184,3 +184,17 @@ test('a bot can play for another player until they come back; pending lists who 
   g.role=2;assert.deepEqual(pending(g),[0]);g.role=1;g.phase='discard';g.discards=[0,4,0,3];assert.deepEqual(pending(g),[1,3]);
   g.phase='order';g.order={candidates:[0,2,3],done:[2]};assert.deepEqual(pending(g),[0,3]);
 });
+test('new tables are public; visibility leaves everyone ready, old saves stay private, and rematch keeps it',()=>{
+  let g=newGame('t');assert.equal(g.public,true);addPlayer(g,'a','A');addPlayer(g,'b','B');g=apply(g,1,{type:'ready'},rng());
+  g=apply(g,0,{type:'settings',public:false},rng());assert.equal(g.public,false);assert.equal(g.players[1].ready,true);assert.equal(view(g,1).public,false);
+  assert.throws(()=>apply(g,0,{type:'settings',public:'yes'},rng()),/Invalid setting/);assert.throws(()=>apply(g,1,{type:'settings',public:true},rng()),/Only the host/);
+  const old=newGame('o');delete old.public;assert.equal(upgrade(old).public,false);
+  const f=fixture(2);f.public=false;f.phase='finished';assert.equal(apply(f,0,{type:'rematch'},rng()).public,false);
+});
+test('the host removes people from the lobby, but not themselves, bots or anyone once the game starts',()=>{
+  let g=newGame('t');['A','B','C'].forEach((n,i)=>addPlayer(g,'id'+i,n));g=apply(g,0,{type:'addBot'},rng());
+  for(const player of [0,3,4,-1,1.5,'1',undefined])assert.throws(()=>apply(g,0,{type:'kick',player},rng()),/another player/);
+  assert.throws(()=>apply(g,1,{type:'kick',player:2},rng()),/Only the host/);
+  g=apply(g,0,{type:'kick',player:1},rng());assert.deepEqual(g.players.map(p=>p.id),['id0','id2',g.players[2].id]);assert.ok(g.players[2].bot);assert.deepEqual(g.players.map(p=>p.color),g.players.map((_,i)=>COLORS[i]));
+  assert.throws(()=>apply(fixture(3),0,{type:'kick',player:1},rng()),/before the game starts/);
+});
