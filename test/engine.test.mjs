@@ -167,7 +167,7 @@ test('the host fills seats with bots named “(Bot)”, removes them, and they s
   assert.throws(()=>apply(g,1,{type:'addBot'},rng()),/host/);for(let i=0;i<2;i++)g=apply(g,0,{type:'addBot'},rng(i+3));
   const bots=g.players.filter(p=>p.bot);assert.equal(bots.length,2);assert.ok(bots.every(p=>p.ready&&/^\w+ \(Bot\)$/.test(p.name)&&p.id.startsWith('bot-')));assert.ok(!bots.some(p=>p.name==='Marko (Bot)'),'a bot never takes a player’s first name');
   assert.throws(()=>apply(g,0,{type:'addBot'},rng()),/full/);assert.throws(()=>apply(g,0,{type:'removeBot',player:1},rng()),/not a bot/);
-  g=apply(g,0,{type:'removeBot',player:2},rng());assert.equal(g.players.length,3);assert.deepEqual(g.players.map(p=>p.color),g.players.map((_,i)=>COLORS[i]));
+  const kept=g.players.map(p=>p.color);g=apply(g,0,{type:'removeBot',player:2},rng());assert.equal(g.players.length,3);assert.deepEqual(g.players.map(p=>p.color),kept.toSpliced(2,1),'nobody is recoloured');
   g.players[1].ready=true;g=apply(g,0,{type:'settings',goal:8},rng());assert.equal(g.players[1].ready,false);assert.equal(g.players[2].ready,true,'bots stay ready');
   assert.equal(view(g,0).players[2].bot,true);
   g.players.forEach(p=>p.ready=true);g=order(apply(g,0,{type:'start'},rng()));assert.throws(()=>apply(g,0,{type:'addBot'},rng()),/host/);
@@ -195,6 +195,27 @@ test('the host removes people from the lobby, but not themselves, bots or anyone
   let g=newGame('t');['A','B','C'].forEach((n,i)=>addPlayer(g,'id'+i,n));g=apply(g,0,{type:'addBot'},rng());
   for(const player of [0,3,4,-1,1.5,'1',undefined])assert.throws(()=>apply(g,0,{type:'kick',player},rng()),/another player/);
   assert.throws(()=>apply(g,1,{type:'kick',player:2},rng()),/Only the host/);
-  g=apply(g,0,{type:'kick',player:1},rng());assert.deepEqual(g.players.map(p=>p.id),['id0','id2',g.players[2].id]);assert.ok(g.players[2].bot);assert.deepEqual(g.players.map(p=>p.color),g.players.map((_,i)=>COLORS[i]));
+  const kept=g.players.map(p=>p.color);g=apply(g,0,{type:'kick',player:1},rng());assert.deepEqual(g.players.map(p=>p.id),['id0','id2',g.players[2].id]);assert.ok(g.players[2].bot);assert.deepEqual(g.players.map(p=>p.color),kept.toSpliced(1,1),'nobody is recoloured');
   assert.throws(()=>apply(fixture(3),0,{type:'kick',player:1},rng()),/before the game starts/);
+});
+test('players pick a free colour or take a bot’s, new seats get the first free one, and colours last into the game and the rematch',()=>{
+  let g=newGame('t');addPlayer(g,'a','A');addPlayer(g,'b','B');assert.deepEqual(g.players.map(p=>p.color),COLORS.slice(0,2));g.players[1].ready=true;
+  for(const color of ['red',undefined,7])assert.throws(()=>apply(g,0,{type:'color',color},rng()),/one of the colours/);
+  assert.throws(()=>apply(g,0,{type:'color',color:COLORS[0]},rng()),/already your colour/);assert.throws(()=>apply(g,0,{type:'color',color:COLORS[1]},rng()),/Another player/);
+  g=apply(g,0,{type:'color',color:COLORS[2]},rng());assert.equal(g.players[0].color,COLORS[2]);assert.equal(g.players[1].ready,true,'a colour changes no rule, so nobody un-readies');
+  g=apply(g,1,{type:'color',color:COLORS[4]},rng());assert.equal(g.players[1].ready,true);assert.equal(g.players[1].color,COLORS[4]);
+  addPlayer(g,'c','C');assert.equal(g.players[2].color,COLORS[0],'the first free colour, in palette order');
+  g=apply(g,0,{type:'addBot'},rng());assert.equal(g.players[3].color,COLORS[1]);
+  g=apply(g,2,{type:'color',color:COLORS[1]},rng());assert.equal(g.players[2].color,COLORS[1]);assert.equal(g.players[3].color,COLORS[0],'the bot takes the colour you left');assert.ok(g.players[3].ready);
+  assert.deepEqual(view(g,1).colors.map(c=>c.hex),COLORS);assert.equal(view(g,1).colors[1].name,'Red');
+  g.players.forEach(p=>p.ready=true);const chosen=g.players.map(p=>p.color);g=apply(g,0,{type:'start'},rng());assert.deepEqual(g.players.map(p=>p.color),chosen);assert.equal(view(g,0).colors,undefined);
+  assert.throws(()=>apply(g,0,{type:'color',color:COLORS[5]},rng()),/before the game starts/);
+  g.phase='finished';g=apply(g,0,{type:'rematch'},rng());assert.deepEqual(g.players.map(p=>p.color),chosen);
+});
+test('a fixed five-player game keeps chosen colours while spots are still drawn, with the sixth spot neutral',()=>{
+  for(const seed of [1,2,3]){let g=newGame('t','extended','fixed');for(let i=0;i<5;i++){addPlayer(g,'id'+i,'P'+i);g.players[i].ready=true;}
+    g=apply(g,0,{type:'color',color:COLORS[5]},rng());const chosen=g.players.map(p=>p.color);g=order(apply(g,0,{type:'start'},rng(seed)),rng(seed));
+    assert.deepEqual(g.players.map(p=>p.color),chosen);assert.equal(new Set(chosen).size,5);assert.equal(g.board.vertices.filter(v=>v.building?.owner===-1).length,2);}
+  const spots=seed=>{let g=newGame('t','extended','fixed');for(let i=0;i<5;i++){addPlayer(g,'id'+i,'P'+i);g.players[i].ready=true;}g=order(apply(g,0,{type:'start'},rng(seed)),rng(seed));return g.board.vertices.filter(v=>v.building?.owner===0).map(v=>v.id).join();};
+  assert.ok(new Set([1,2,3,4,5,6,7,8].map(spots)).size>1,'starting spots are still shuffled');
 });

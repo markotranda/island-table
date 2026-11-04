@@ -8,6 +8,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 |---|---|---|---|
 | 005 | [Checks that tests could not do](005-unverified-checks.md) | waiting on owner | Owner: sounds, phone, steal tooltip, human-vs-bots game. Claude: screenshots at 1280×720, extended board, phone |
 | 006 | [Tooltips left out in round 2](006-tooltip-gaps.md) | questions | Ask the owner whether player-card and robber tips are still wanted |
+| 009 | [Choosing a colour in the lobby](009-lobby-colours.md) | in progress | Step 1 |
 
 ## Done
 
