@@ -6,7 +6,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Status | Next step |
 |---|---|---|---|
-| 014 | [Noticing your turn, and remembering to end it](014-turn-reminders.md) | in progress | Step 3: End-turn nudge |
+| 014 | [Noticing your turn, and remembering to end it](014-turn-reminders.md) | in progress | Step 4: docs and THROTTLE run |
 | 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | planned | Wait for the stream instead of reading once; longer bot-seat wait |
 | 011 | [Starting-roll test can miss the 3 s hold under load](011-starting-roll-test-flake.md) | planned | Record the hold in the page instead of polling |
 | 005 | [Checks that tests could not do](005-unverified-checks.md) | waiting on owner | Owner: sounds, phone, steal tooltip, human-vs-bots game. Claude: screenshots at 1280×720, extended board, phone |

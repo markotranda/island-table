@@ -207,6 +207,35 @@ test('browser: six player cards always fit without scrolling and never change si
   }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
 });
 
+test('browser: End turn glows when nothing is left to do but trade with players, and more after a while',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let host;
+  try{
+    // Short thresholds (soft, strong) instead of 3 s and 30 s; every staged reload keeps them.
+    host=await sixSeats(browser,server);await host.init('window.__nudgeMs=[300,900];window.__sounds=[];');
+    const nudge=()=>host.eval(`document.querySelector('[data-command="end"]')?.dataset.nudge??'none'`);
+    const glows=async(fn,why)=>{await stage(server,[host],g=>{hostTurn(g);fn(g);});await host.waitFor(`document.querySelector('[data-command="end"]')?.dataset.nudge==='soft'`,{message:`soft glow: ${why}`});
+      await host.waitFor(`document.querySelector('[data-command="end"]')?.dataset.nudge==='strong'`,{message:`strong glow: ${why}`});};
+    const quiet=async(fn,why)=>{await stage(server,[host],g=>{hostTurn(g);fn(g);});await host.waitFor(`document.querySelector('[data-command="end"]')`);await pause(1300);assert.equal(await nudge(),'none',why);};
+    // The host has no pieces on the board yet (staged from the starting roll), so the development card is the only thing to buy.
+    const give=(g,h)=>{for(const r of R){g.bank[r]+=g.players[0].hand[r];g.players[0].hand[r]=0;}for(const [r,n] of Object.entries(h)){g.bank[r]-=n;g.players[0].hand[r]=n;}};
+    await glows(g=>give(g,{}),'an empty hand');
+    await heard(host,'nudge');assert.equal((await sounds(host)).filter(n=>n==='nudge').length,1,'one reminder tone per turn');
+    assert.equal(await host.eval(`getComputedStyle(document.querySelector('[data-command="end"]')).animationName`),'end-nudge-strong');
+    await quiet(g=>give(g,{ore:1,wool:1,wheat:1}),'a development card can be bought');
+    await glows(g=>give(g,{ore:4}),'4 ore trade into one card, which is not enough to buy anything');
+    await quiet(g=>give(g,{ore:5,wool:1}),'4 ore for wheat makes a development card affordable');
+    // Development cards: one bought this turn can't be played, an older one can.
+    const card=(g,bought)=>{const i=g.deck.lastIndexOf('knight');g.deck.splice(i,1);g.players[0].cards=[{type:'knight',bought,id:'fixture-knight'}];};
+    await glows(g=>{give(g,{});card(g,14);},'a knight bought this turn');
+    await quiet(g=>{give(g,{});g.deck.push('knight');card(g,-1);},'an older knight can be played');
+    // Someone accepted the host's offer: confirming it is still to do.
+    await quiet(g=>{give(g,{wood:1});g.deck.push('knight');g.players[0].cards=[];g.offers=[{id:'fixture-offer',from:0,to:null,give:{wood:1},want:{brick:1},accepted:[1],declined:[]}];},'an accepted offer waits to be confirmed');
+    // Paired player 2 gets the same glow on "End my phase".
+    await glows(g=>{give(g,{});g.offers=[];g.role=2;},'paired player 2');assert.match(await host.text('[data-command="end"]'),/End my phase/);
+    assert.deepEqual(host.errors,[]);
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: a full hand of development cards never pushes the Build buttons away',{skip,timeout:120000},async()=>{
   const server=await startServer(),browser=await launch();let host;
   try{

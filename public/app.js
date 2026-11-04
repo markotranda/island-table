@@ -28,6 +28,7 @@ const ui=(k,label)=>`<svg class="ui-ico" ${label?`role="img" aria-label="${label
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const commandId=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
 let discardAt=0,panelAt=0,state=null,session=null,mode='',counter=null,turnCue=null,victoryClosed=false,victoryAt=0,dismissed=new Set(),seenOffers=new Set(),seenEvent=null,effects=[],tab=location.search.includes('room=')?'join':'create',connected=false,busy=null,streamController=null,modal='';
+const nudge={key:null,since:0,level:'',toned:null,timer:0};// the End turn glow, see syncNudge()
 const params=new URLSearchParams(location.search);let room=params.get('room')||'';
 let saved={};try{saved=JSON.parse(localStorage.getItem('island-seats')||'{}');}catch{}
 // Seats stay until their room is gone, the token stops working, or the game has been over for a week; at most the 20 most recently used.
@@ -93,6 +94,8 @@ const SFX={
   tick(){noise(0,.03,{type:'highpass',freq:4000,gain:.22});tone(1760,0,.06,{gain:.04});},
   sting(){[523,784,1047].forEach((f,k)=>tone(f,k*.09,k===2?.5:.14,{type:'sawtooth',gain:.06,cut:2600}));},
   end(){noise(0,.35,{freq:500,sweep:2000,q:1.2,gain:.14});},
+  // A gentle reminder that the turn is still yours to end: two soft low notes.
+  nudge(){tone(392,0,.3,{type:'triangle',gain:.05});tone(330,.22,.45,{type:'triangle',gain:.05});},
   // Your turn: a clear rising two-note chime, the one cue meant to be heard from across the room.
   turn(){tone(880,0,.5,{type:'triangle',gain:.1});tone(1175,.16,.7,{type:'triangle',gain:.1});tone(2350,.16,.4,{gain:.015});},
   // A short brass-like call: a rising pickup, a held chord, then a bright resolution.
@@ -206,8 +209,17 @@ function devStacks(me,playable){return Object.keys(names).map(type=>{const cards
   const why=type==='vp'?'Counts automatically':ready?`Click to play one`:fresh===cards.length?'Bought this turn: playable from your next turn':'Play on your turn, one card per turn';
   return `<span class="dev-slot"><button class="dev-card ${type}" data-card="${(ready||cards[0]).id}" data-type="${type}" ${ready?'':'disabled'} data-tip="${names[type]}: ${DEV_HELP[type]} ${why}."><svg viewBox="0 0 24 24" aria-hidden="true">${EMBLEM[type]}</svg><span>${names[type]}</span>${fresh?`<small>${fresh>1?fresh+' ':''}new</small>`:''}${cards.length>1?`<b>${cards.length}</b>`:''}</button></span>`;}).join('');}
 function buildPiece(type,color){if(type==='road')return `<svg viewBox="-16 -14 32 28" aria-hidden="true">${roadBar(-11,8,11,-8,color)}</svg>`;if(type==='buyCard')return `<svg viewBox="-16 -14 32 28" aria-hidden="true"><rect x="-8" y="-12" width="16" height="23" rx="2.5" fill="#2f4d48" stroke="#1c3330" stroke-width="1.4"/><path d="M0 -5l4 5-4 5-4-5z" fill="#f2c94c"/></svg>`;return `<svg viewBox="-16 -20 32 32" aria-hidden="true">${piece(type,color)}</svg>`;}
-function buildBar(){const me=state.players[state.me],active=state.me===state.active,open=active&&state.phase==='action',mine=k=>state.board.vertices.filter(v=>v.building?.owner===state.me&&v.building.kind===k).length;
-  const left={road:15-state.board.edges.filter(e=>e.owner===state.me).length,settlement:5-mine('settlement'),city:4-mine('city'),buyCard:state.deckCount},spots={road:state.legal.roads.length,settlement:state.legal.settlements.length,city:state.legal.cities.length,buyCard:1};
+// Pieces left and legal spots for each build: the legal lists don't apply the piece limits, so both are needed.
+function buildRoom(){const mine=k=>state.board.vertices.filter(v=>v.building?.owner===state.me&&v.building.kind===k).length;
+  return {left:{road:15-state.board.edges.filter(e=>e.owner===state.me).length,settlement:5-mine('settlement'),city:4-mine('city'),buyCard:state.deckCount},spots:{road:state.legal.roads.length,settlement:state.legal.settlements.length,city:state.legal.cities.length,buyCard:1}};}
+const buildable=(hand,{left,spots}=buildRoom())=>BUILD.filter(([type,,cost])=>left[type]>0&&spots[type]>0&&Object.entries(cost).every(([r,n])=>hand[r]>=n)).map(([type])=>type);
+// Nothing left to do on your own action phase but trading with players: nothing to build or buy, no card worth playing, and no
+// single supply trade that would make a build possible. An offer of yours someone accepted, or a counter to you, is still open business.
+function idle(){const s=state,me=s.players[s.me];if(s.phase!=='action'||s.active!==s.me||mode)return false;const r=buildRoom();if(buildable(me.hand,r).length)return false;
+  if(s.offers?.some(o=>o.from===s.me&&o.accepted?.length||o.to===s.me&&o.counterTo))return false;
+  if(!me.played&&me.cards.some(c=>c.type!=='vp'&&c.bought!==s.turn&&(c.type!=='roads'||r.left.road>0&&r.spots.road>0)))return false;
+  return !R.some(give=>me.hand[give]>=s.ratios[give]&&R.some(want=>want!==give&&s.bank[want]>0&&buildable({...me.hand,[give]:me.hand[give]-s.ratios[give],[want]:me.hand[want]+1},r).length));}
+function buildBar(){const me=state.players[state.me],active=state.me===state.active,open=active&&state.phase==='action',{left,spots}=buildRoom();
   return `<div class="build-bar" data-ui="build-bar"><span class="eyebrow">BUILD</span><div class="build-buttons">${BUILD.map(([type,title,cost])=>{const why=!open?(active?'Finish the current step first':'Build on your turn'):!left[type]?'None left':!Object.entries(cost).every(([r,n])=>me.hand[r]>=n)?'Not enough resources':!spots[type]?'No legal spot on the board':'';
     // Each cost card is marked as in hand or missing, so you can see what to trade for even off-turn.
     const missing=Object.entries(cost).filter(([r,n])=>me.hand[r]<n).map(([r,n])=>`${n-me.hand[r]} ${r}`).join(', ');
@@ -276,7 +288,7 @@ function controls(){const me=state.players[state.me],active=state.active===state
   if(active&&phase==='invention')html+=`<form class="panel" id="invention"><h3>Take 2 available resources</h3>${picker('take',state.bank)}<p class="fine pick-total" data-total="2"></p><button class="primary wide">Collect resources</button></form>`;
   if(active&&phase==='monopoly')html+=`<div class="panel"><h3>Collect all of one resource</h3><div class="choice">${R.map(r=>`<button class="choice-card" data-monopoly="${r}" style="--terrain:${terrain[r]}">${icon(r,24)}<span>${r}</span></button>`).join('')}</div></div>`;
   if(active&&phase==='steal')html+=`<div class="panel"><h3>Choose a player</h3>${state.victims.map(p=>`<button class="ghost wide" data-victim="${p}">${escape(state.players[p].name)} · ${state.players[p].resourceCount} cards</button>`).join('')}</div>`;
-  if(active&&phase==='action')html+=`${mode&&['road','settlement','city'].includes(mode)?`<p class="fine build-hint">Choose a highlighted ${mode==='road'?'edge':'intersection'} on the island. Esc cancels.</p>`:''}<button class="primary wide" data-command="end">End ${state.count>4?'my phase':'turn'} ${ui('arrow')}</button>`;
+  if(active&&phase==='action')html+=`${mode&&['road','settlement','city'].includes(mode)?`<p class="fine build-hint">Choose a highlighted ${mode==='road'?'edge':'intersection'} on the island. Esc cancels.</p>`:''}<button class="primary wide end-turn"${nudge.level?` data-nudge="${nudge.level}" style="--t:-${Math.round(performance.now()-nudge.since)}ms"`:''} data-command="end">End ${state.count>4?'my phase':'turn'} ${ui('arrow')}</button>`;
   if(!active&&!['finished','discard','order'].includes(phase))html+=`<p class="waiting" style="margin-top:18px">${phase==='action'&&state.role===1?'Answer the current player’s offers while you wait.':'The board updates live. Your next move will appear here.'}</p>`;
   html+=`<section class="log"><div class="section-label"><span class="eyebrow muted">THE STORY SO FAR</span><span class="fine">LIVE</span></div><div class="log-list">${state.events.toReversed().slice(0,60).map(e=>`<div class="log-item">${story(e)}</div>`).join('')||'<p class="fine">Every great island starts with two settlements.</p>'}</div></section></aside>`;return html;
 }
@@ -359,7 +371,14 @@ function turnBanner(mine){const wrap=document.querySelector('.board-wrap')?.getB
   el.animate(frames,{duration:mine?2600:1700,easing:'ease-in-out',fill:'both'}).finished.then(()=>el.remove(),()=>el.remove());}
 // Scrolled panels keep their place across live redraws instead of jumping back to the top.
 const SCROLLERS=['.log-list','.trade-panel','.discard-card'];
-function render(preserve=false){if(state?.board)noticeEvents();if(state?.phase==='lobby')turnCue='lobby';const scrolls=SCROLLERS.map(q=>app.querySelector(q)?.scrollTop??0),fields=preserve?[...app.querySelectorAll('form input,form select')].map(e=>({form:e.form.id,name:e.name,value:e.value,focused:document.activeElement===e})):[];app.innerHTML=(state?(state.phase==='lobby'?lobby():game()):home())+victoryHtml()+discardHtml()+modalHtml();for(const f of fields){const el=document.getElementById(f.form)?.elements.namedItem(f.name);if(el){el.value=f.value;if(f.focused)el.focus();}}SCROLLERS.forEach((q,i)=>{const el=app.querySelector(q);if(el&&scrolls[i])el.scrollTop=scrolls[i];});syncPickers();playEffects();syncTitle();retip();watchTables();clearTimeout(render.hold);const held=state?.board&&heldOrder();if(held)render.hold=setTimeout(()=>render(true),HOLD-since(held)+30);}
+// The End turn glow: soft once nothing has been left to do for a few seconds, stronger with one quiet tone after half a minute.
+// Its start time is kept across redraws, so the glow carries on (negative animation-delay) instead of restarting on every update.
+function syncNudge(){const [soft,strong]=Array.isArray(window.__nudgeMs)?window.__nudgeMs:[3000,30000],now=performance.now();
+  const key=state?.board&&idle()?`${state.turn}:${state.active}:${state.role}`:null;if(key!==nudge.key){nudge.key=key;nudge.since=now;}
+  clearTimeout(nudge.timer);if(!key){nudge.level='';return;}const t=now-nudge.since;nudge.level=t>=strong?'strong':t>=soft?'soft':'';
+  if(nudge.level==='strong'&&nudge.toned!==key){nudge.toned=key;cue('nudge');}
+  if(t<strong)nudge.timer=setTimeout(()=>{if(nudge.key===key)render(true);},(t<soft?soft:strong)-t+20);}
+function render(preserve=false){if(state?.board)noticeEvents();syncNudge();if(state?.phase==='lobby')turnCue='lobby';const scrolls=SCROLLERS.map(q=>app.querySelector(q)?.scrollTop??0),fields=preserve?[...app.querySelectorAll('form input,form select')].map(e=>({form:e.form.id,name:e.name,value:e.value,focused:document.activeElement===e})):[];app.innerHTML=(state?(state.phase==='lobby'?lobby():game()):home())+victoryHtml()+discardHtml()+modalHtml();for(const f of fields){const el=document.getElementById(f.form)?.elements.namedItem(f.name);if(el){el.value=f.value;if(f.focused)el.focus();}}SCROLLERS.forEach((q,i)=>{const el=app.querySelector(q);if(el&&scrolls[i])el.scrollTop=scrolls[i];});syncPickers();playEffects();syncTitle();retip();watchTables();clearTimeout(render.hold);const held=state?.board&&heldOrder();if(held)render.hold=setTimeout(()=>render(true),HOLD-since(held)+30);}
 // The clipboard API needs a secure context, which plain http LAN addresses are not; fall back to a selected textarea.
 async function copy(text,message){try{await navigator.clipboard.writeText(text);toast(message);}catch{const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.cssText='position:fixed;opacity:0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();toast(ok?message:`Copy this link: ${text}`);}}
 // Tooltips: anything with data-tip explains itself after a short hover, or a long press on touch. The #tip layer lives outside #app,

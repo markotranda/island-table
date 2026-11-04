@@ -451,3 +451,8 @@
 @media(max-width:620px){.turn-banner b{font-size:38px}.turn-banner.small b{font-size:22px}}
 .topbar .notify{position:relative}.topbar .notify:not(.on) svg{opacity:.45}.topbar .notify:not(.on)::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:2px;border-radius:2px;background:currentColor;transform:translate(-50%,-50%) rotate(-45deg);opacity:.7}
 @media(max-width:620px){.topbar [data-ui="invite"] .btn-label{display:none}.topbar [data-ui="invite"]{display:inline-grid;place-items:center;padding:7px 9px}}
+.end-turn[data-nudge]{animation:end-nudge 2.6s ease-in-out var(--t,0s) infinite}
+.end-turn[data-nudge="strong"]{animation-name:end-nudge-strong;animation-duration:1.8s}
+@keyframes end-nudge{0%,100%{box-shadow:0 0 0 0 #f2c94c00}50%{box-shadow:0 0 0 4px #f2c94c55,0 0 14px 2px #f2c94c66}}
+@keyframes end-nudge-strong{0%,100%{box-shadow:0 0 0 0 #f2c94c00;transform:none}50%{box-shadow:0 0 0 6px #f2c94c88,0 0 22px 6px #f2c94c99;transform:scale(1.025)}}
+@media(prefers-reduced-motion:reduce){.end-turn[data-nudge]{animation:none;box-shadow:0 0 0 3px #f2c94c}}
