@@ -391,3 +391,14 @@ Plan: [`work/010-bigger-map-fixed-sidebar.md`](work/010-bigger-map-fixed-sidebar
 Plan: [`work/012-toppled-piece-shadow.md`](work/012-toppled-piece-shadow.md).
 
 - **A flat shadow.** In the lobby, a player who isn't ready has their pieces lying on their side. Their shadow used to tip over with them and stand upright. Now it stays on the table, and the pieces lie on it.
+
+## 18. Not missing your turn
+
+Plan: [`work/014-turn-reminders.md`](work/014-turn-reminders.md), reviewed by a second agent.
+
+Players said they missed that it was their turn, and forgot to end it.
+
+- **A band across the board.** When your turn starts, a band in your colour sweeps across the island with "Your turn" and what to do next. Everyone else sees a quieter one with the player's name. A tab in the background plays its band when you come back.
+- **The tab title** reads "● Your turn" while the game waits on you, so it shows from other tabs.
+- **Turn alerts.** A bell in the top bar turns on a system notification when your turn starts while the tab is hidden. Browsers offer these only over HTTPS or on localhost.
+- **End turn glows** softly once you have nothing left to do but trade with players: nothing to build, buy or play, and no supply trade that would make a build possible. After half a minute it glows more, with one quiet tone.

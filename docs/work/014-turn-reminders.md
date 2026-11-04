@@ -1,6 +1,6 @@
 # 014: Noticing your turn, and remembering to end it
 
-**Status:** in progress · **Commits:** see `git log -- docs/work/014-turn-reminders.md`
+**Status:** done · **Commits:** see `git log -- docs/work/014-turn-reminders.md`
 
 ## Feedback
 2026-11-04, owner:
@@ -66,12 +66,16 @@ Round 1 (fresh general-purpose agent), verdict REVISE, one blocking finding; all
 | 1 | done | 5d19318 | `turnStart()`/`turnBanner()` in `app.js`, `.turn-banner` in `style.css`; test `browser: a band across the board says whose turn it is…`. Screenshots desktop + phone looked right |
 
 | 2 | done | 1160e18 | `owes()`/`syncTitle()`, bell `[data-ui="notify"]` (`toggleNotify()`, `alertTurn()`, `closeAlert()`), `#ui-bell`; driver `page.init()`; `seatTable(…,init)`; test `browser: the tab title says when the game waits on you…`. Phone: Invite is icon-only under 620 px so the bell fits |
-| 3 | done | (this commit) | `buildRoom()`/`buildable()` shared with `buildBar()`, `idle()`, `syncNudge()` (state `nudge`), End button `.end-turn[data-nudge=soft|strong]` with `--t`, `SFX.nudge`; test `browser: End turn glows when nothing is left to do…` |
+| 3 | done | d3e8ce8 | `buildRoom()`/`buildable()` shared with `buildBar()`, `idle()`, `syncNudge()` (state `nudge`), End button `.end-turn[data-nudge=soft|strong]` with `--t`, `SFX.nudge`; test `browser: End turn glows when nothing is left to do…` |
+| 4 | done | (this commit) | How to play ("Whose turn"), README, CLAUDE.md hooks, project log. `THROTTLE=6` on all browser tests: 18 pass |
 Log 2026-11-04, step 1: the band records itself in `window.__banners` (like `__sounds`) because it is on screen ~2.6 s. Gotcha: the hidden-tab test must hide the tab *before* ending the previous turn, or the band can already have played. Full `npm test`: 62 pass, 1 fail (`six player cards…`, intermittent: passes alone with and without this change; same family as item 013).
 Log 2026-11-04, step 2: the Notification stub must keep its permission across reloads (localStorage), like a real browser, or the bell is on but alerts never fire. The off state is the bell dimmed with a CSS slash, so only one Font Awesome icon was added. Full `npm test`: 64 pass.
 
 ## Not verified
+- A real system notification (tests use a stub): check on desktop over localhost or HTTPS that the bell asks for permission, the alert appears from a background tab, and clicking it focuses the game. Over plain LAN http the bell is absent by design.
+- Mobile notifications: Android Chrome needs a service worker for `new Notification`; the call is wrapped in try/catch, so phones over HTTPS may show the bell but get no alert. Only worth a service worker if the owner wants phone alerts.
+- The `nudge` tone by ear, and whether the soft glow is noticeable without being annoying in a real game.
 
 ## Next step / Handoff prompt
-Read CLAUDE.md, then this file (Plan + Review findings amend it). Step 4 (docs, THROTTLE=6 run, project log) is next.
+Done. Leftover owner checks are listed under Not verified and in item 005.
 Log 2026-11-04, step 3: `room` is already a module variable in `app.js` (the room code), so the helper is `buildRoom()`. The staged host has no board pieces, so the supply-lookahead case uses 5 ore + 1 wool → a development card instead of 5 wood → a road. `__nudgeMs` is set with `page.init` so it survives `stage()`'s reloads. Full `npm test`: 64 pass, 1 fail, twice: `…name and options sit in the corners…` (`the live stream clears it`), the item 013 flake that fails about half the time on unchanged main; it passes alone. Committed with that exception.

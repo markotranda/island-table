@@ -25,3 +25,7 @@ Every item below was left unverified because headless tests can't do it, or only
 
 ## Next step
 Ask the owner about 1, 4, 6 and 7 (any of their findings become new feedback via the answering-feedback skill). Claude can do 2, 3 and 5 with `node scripts/review-screens.mjs` at those sizes and send the screenshots.
+
+## From item 014 (2026-11-04)
+- Turn alerts: over localhost or HTTPS, turn on the bell, switch tabs, and check the notification appears when your turn starts and clicking it brings you back.
+- Listen to the End turn reminder tone (after 30 s with nothing left to do) and judge whether the soft glow is noticeable but not annoying.
