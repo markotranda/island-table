@@ -449,3 +449,5 @@
 .turn-banner span{font-size:12px;font-weight:750;letter-spacing:2px;text-transform:uppercase}
 .turn-banner.small{padding:9px 16px;background:color-mix(in srgb,var(--player) 42%,transparent);box-shadow:none}.turn-banner.small b{font-size:28px}
 @media(max-width:620px){.turn-banner b{font-size:38px}.turn-banner.small b{font-size:22px}}
+.topbar .notify{position:relative}.topbar .notify:not(.on) svg{opacity:.45}.topbar .notify:not(.on)::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:2px;border-radius:2px;background:currentColor;transform:translate(-50%,-50%) rotate(-45deg);opacity:.7}
+@media(max-width:620px){.topbar [data-ui="invite"] .btn-label{display:none}.topbar [data-ui="invite"]{display:inline-grid;place-items:center;padding:7px 9px}}

@@ -90,8 +90,8 @@ async function resolveRoll(pages,active){
 }
 async function playTurn(pages,page){await page.click('[data-command="roll"]');await resolveRoll(pages,page);await page.click('[data-command="end"]');}
 // Seats players in join order, so pages[i] is seat i, readies everyone and starts.
-async function seatTable(browser,server,count,setup,roll=true){
-  const pages=[];for(let i=0;i<count;i++)pages.push(await browser.newPage());
+async function seatTable(browser,server,count,setup,roll=true,init=''){
+  const pages=[];for(let i=0;i<count;i++){const page=await browser.newPage();if(init)await page.init(init);pages.push(page);}
   await createTable(pages[0],server.host,'Seat 0',count>4?'extended':'base',setup);const room=await pages[0].eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
   for(let i=1;i<count;i++)await joinByInvite(pages[i],`${server.invite}/?room=${room}`,`Seat ${i}`);
   for(const page of pages){await page.click('[data-command="ready"]');await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
@@ -329,6 +329,38 @@ test('browser: a band across the board says whose turn it is, and a hidden tab s
     await after.eval(`window.__hidden=false;document.dispatchEvent(new Event('visibilitychange'))`);await sawBanner(after,'me');
     for(const page of pages)assert.deepEqual(page.errors,[]);
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
+// A stand-in for the browser's notifications (headless has no notification centre), recording what the page shows and closes and
+// remembering the permission across reloads like a browser,
+// and a document.hidden the test can flip, with a visibilitychange like a real tab switch.
+const ALERTS=`window.__notes=[];window.Notification=class{static permission=localStorage.getItem('test-permission')||'default';static requestPermission(){Notification.permission='granted';localStorage.setItem('test-permission','granted');return Promise.resolve('granted');}constructor(title,o){this.title=title;window.__notes.push(title+': '+o.body);}close(){window.__notes.push('closed');}};
+window.__hidden=false;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__hidden});window.__show=v=>{window.__hidden=!v;document.dispatchEvent(new Event('visibilitychange'));};`;
+test('browser: the tab title says when the game waits on you, and turn alerts reach a background tab',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[],plain;
+  try{
+    // Without the Notification API (or outside HTTPS/localhost) there is no bell.
+    plain=await browser.newPage();await plain.init('delete window.Notification');await createTable(plain,server.host,'Plain','base','variable');
+    assert.ok(!await plain.has('[data-ui="notify"]'),'no bell without notifications');assert.ok(!(await plain.eval('document.title')).startsWith('●'),'not in a lobby');await plain.close();plain=null;
+    pages=await seatTable(browser,server,2,'variable',true,ALERTS);
+    const titled=page=>page.eval(`document.title.startsWith('● Your turn')`);
+    let active=null;for(let i=0;i<100&&!active;i++){for(const p of pages)if(await p.has('[data-vertex]'))active=p;if(!active)await pause(50);}
+    const other=pages.find(p=>p!==active);assert.deepEqual([await titled(active),await titled(other)],[true,false],'only the player the game waits on is flagged');
+    // The bell is off until asked for; turning it on asks the browser once, and the choice lasts.
+    for(const page of pages){assert.equal(await page.eval(`document.querySelector('[data-ui="notify"]').getAttribute('aria-pressed')`),'false');await page.click('[data-ui="notify"]');await page.waitFor(`document.querySelector('[data-ui="notify"]').getAttribute('aria-pressed')==='true'`);}
+    await other.reload();await other.waitFor(`document.querySelector('[data-ui="notify"]')?.getAttribute('aria-pressed')==='true'`,{message:'the choice lasts'});
+    active=await playSetup(pages);const waiting=pages.find(p=>p!==active);
+    // In the background, the start of your turn sends one notification; coming back closes it.
+    await waiting.eval('window.__notes=[];window.__show(false)');
+    await playTurn(pages,active);assert.equal(await waitActive(pages,active),waiting);
+    await waiting.waitFor(`window.__notes.length===1&&window.__notes[0]==='Your turn: Roll the dice.'`,{message:'expected one turn alert'});
+    assert.ok(await titled(waiting),'the background tab title is flagged');assert.ok(!await titled(active));
+    await waiting.eval('window.__show(true)');await waiting.waitFor(`window.__notes.at(-1)==='closed'`,{message:'coming back closes the alert'});
+    // A visible tab gets no notification.
+    await waiting.eval('window.__notes=[]');await playTurn(pages,waiting);await waitActive(pages,waiting);await playTurn(pages,active);await waitActive(pages,active);
+    await pause(200);assert.ok(!(await waiting.eval('window.__notes')).some(n=>n.startsWith('Your turn')),'no alert for a visible tab');
+    for(const page of pages)assert.deepEqual(page.errors,[]);
+  }finally{await plain?.close().catch(()=>{});for(const page of pages)await page.close().catch(()=>{});await browser.close();await server.stop();}
 });
 
 test('browser: phone-width home and lobby fit without horizontal scrolling',{skip,timeout:60000},async()=>{

@@ -36,6 +36,8 @@ export async function launch(){
     await cmd('Page.addScriptToEvaluateOnNewDocument',{source:'window.__copied=[];Object.defineProperty(navigator,"clipboard",{value:{writeText:async t=>{window.__copied.push(t)}}});'});
     const page={errors,
       async eval(expression){const r=await cmd('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;},
+      // Runs source in every document this page loads from now on, before the app, so test stubs survive reloads (stage() reloads).
+      init:source=>cmd('Page.addScriptToEvaluateOnNewDocument',{source}),
       async goto(url){const loaded=new Promise(r=>loads.push(r));await cmd('Page.navigate',{url});await loaded;},
       resize:(width,height)=>cmd('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768}),
       async reload(){const loaded=new Promise(r=>loads.push(r));await cmd('Page.reload');await loaded;},
