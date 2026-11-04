@@ -444,3 +444,23 @@ test('browser: the host removes a friend from the lobby and makes the table priv
     assert.deepEqual([...host.errors,...guest.errors],[]);
   }finally{await host?.close().catch(()=>{});await guest?.close().catch(()=>{});await browser?.close();await server.stop();}
 });
+
+test('browser: open tables list public lobbies on the home screen and join from the list',{skip,timeout:90000},async()=>{
+  const server=await startServer(),browser=await launch();let host,guest,third;
+  try{
+    host=await browser.newPage();guest=await browser.newPage({width:375,height:812});third=await browser.newPage();
+    await createTable(host,server.host,'Ana','extended','variable');const room=await host.eval(`document.querySelector('.place-code').value`);
+    await guest.goto(server.host);await guest.click('[data-ui="tab-join"]');
+    await guest.waitFor(`document.querySelector('[data-open="${room}"]')?.textContent.includes('Ana’s table')`,{message:'The public table is not listed'});
+    assert.match(await guest.text(`[data-open="${room}"]`),/1 \/ 6 seated · Extended island · 10 points/);assert.ok(await noOverflow(guest),'phone width');
+    // Join submits the entry form with the typed name.
+    await guest.type('#nickname','Bo');await guest.click(`[data-join="${room}"]`);await guest.waitFor(`document.querySelector('[data-command="ready"]')`);
+    await host.waitFor(`document.querySelectorAll('.lobby-seat:not(.empty)').length===2`);
+    // Back home, the table you sit at offers Resume instead of Join.
+    await guest.click('[data-ui="home"]');await guest.click('[data-ui="tab-join"]');await guest.waitFor(`document.querySelector('[data-open="${room}"] [data-resume]')`);
+    await third.goto(server.host);await third.click('[data-ui="tab-join"]');await third.waitFor(`document.querySelector('[data-open="${room}"] [data-join]')`);
+    await host.select('[data-setting="public"]','false');await host.waitFor(`document.querySelector('[data-ui="settings"]').dataset.public==='false'`);
+    await third.waitFor(`!document.querySelector('[data-open="${room}"]')`,{timeout:12000,message:'A private table is still listed'});
+    assert.deepEqual([...host.errors,...guest.errors,...third.errors],[]);
+  }finally{for(const p of [host,guest,third])await p?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
