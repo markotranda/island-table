@@ -1,6 +1,6 @@
 # 008: Open tables (public rooms), kicking, and lobby cleanup
 
-**Status:** in progress · **Commits:** … · **Depends on:** —
+**Status:** done · **Commits:** 8ce87cc, 28eaed0, e571e40, 0b7ab98, docs commit · **Depends on:** —
 
 ## Feedback
 2026-11-04, owner:
@@ -83,8 +83,20 @@ Round 1 (fresh general-purpose agent): APPROVE, 11 minor findings. All accepted:
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
+| 1 Engine | done | 8ce87cc | `unseat()` shared by `removeBot` and `kick`. |
+| 2 Server | done | 28eaed0 | Client `leave()` added here (review finding 1). |
+| 3 Lobby | done | e571e40 | |
+| 4 Home | done | 0b7ab98 | |
+| 5 Docs | done | (this commit) | Screenshot `02b-open-tables` added to `scripts/review-screens.mjs`. |
+
+Log 2026-11-04:
+- Step 2 gotcha: at first every authenticated GET counted as "someone was here", so a phone checking its saved seats from the home screen (`checkSeats()`) would have kept a lobby alive forever. Only streams, commands, create and join count now.
+- Step 2: kicked streams are closed in `broadcast()` (a client whose player is gone gets `res.end()`), so no extra bookkeeping.
+- One `THROTTLE=6 npm test` run failed in the old "HTTP rooms" server test after 388 ms. It didn't reproduce in 4 runs of the file, 3 full runs or another throttled run (all green). The output was not kept. Watch for it.
 
 ## Not verified
+- Open tables over a real LAN/internet deployment (Docker, `PUBLIC_ORIGIN`) and on a real phone; tested in headless Edge at 1440 and 375 px.
+- The hour-long default `LOBBY_TTL` is only exercised with 1.5 s in tests.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. The plan is in review; after approval, implement steps 1–5 in order, one commit each, updating Progress.
+Done. If the owner reports issues, open a new work item that links here.

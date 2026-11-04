@@ -359,3 +359,12 @@ Plan: [`work/004-bots.md`](work/004-bots.md), reviewed by a second agent over th
 Plan: [`work/007-starting-roll-hold.md`](work/007-starting-roll-hold.md).
 
 - **Who rolled what.** The starting-roll card used to vanish the moment the last player rolled, before anyone saw that roll. Now it stays 3 seconds ("Seat 2 goes first!"), then fades; the first player can already place or roll underneath it. A tie stays up 3 seconds too ("Tie at 8!") before the tied players get their dice back.
+
+## 14. Open tables
+
+Plan: [`work/008-open-tables.md`](work/008-open-tables.md), reviewed by a second agent (approved, eleven small notes folded in).
+
+- **Find a game.** The Join tab lists open tables: public lobbies with a free seat and someone in them, with the host's name, seats, map and points. Join uses the name you typed; tables you already sit at offer Resume.
+- **Public or private.** New tables are public; the host switches Visibility in the lobby without making anyone ready up again. Tables from before stay private.
+- **Kicking.** The host removes anyone from the lobby with the × on their seat; they land on the home screen with a message. In a game, a bot standing in still covers people who leave.
+- **Cleanup.** A lobby nobody has had open for an hour is deleted with its seats. Games under way and finished games are kept.

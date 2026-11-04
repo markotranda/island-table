@@ -73,7 +73,7 @@ Requires Node.js 24 or newer:
 node server.mjs
 ```
 
-Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are optional environment variables. Direct runs listen on all interfaces, and invitations copied from localhost automatically use this computer's LAN address (for example `http://192.168.0.35:3000`); set `PUBLIC_ORIGIN` to override it. Windows Firewall may ask to allow Node.js on private networks the first time; allow it so friends can connect. Direct runs save to `data/games.sqlite`; Docker saves to `/data/games.sqlite` on the named volume.
+Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, `PUBLIC_ORIGIN`, and `LOBBY_TTL` are optional environment variables. Direct runs listen on all interfaces, and invitations copied from localhost automatically use this computer's LAN address (for example `http://192.168.0.35:3000`); set `PUBLIC_ORIGIN` to override it. Windows Firewall may ask to allow Node.js on private networks the first time; allow it so friends can connect. Direct runs save to `data/games.sqlite`; Docker saves to `/data/games.sqlite` on the named volume.
 
 ## Play and reconnect
 
@@ -83,6 +83,8 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, and `PUBLIC_ORIGIN` are 
 - When only one player can be robbed, the robber steals from them at once.
 - Only you receive your private cards. Your own score includes hidden Victory Point cards; other players see your public score until the game ends.
 - Refreshing or reconnecting restores your saved seat and the current phase.
+- **Open tables:** new tables are public. While a public lobby has a free seat and someone from it has the page open, it is listed on the home screen under **Join friends → Open tables**, so anyone who can reach your server can see and join it. The host can switch **Visibility** to private in the lobby (only people with the code can join) and remove anyone from the lobby with the × on their seat; a removed player can join again unless the table is private. Tables created before this feature stay private.
+- **Lobby cleanup:** a lobby (public or private, including a rematch lobby everyone left) that nobody has had open for an hour is deleted with its seats. Lobbies that existed when the server started get an hour from the start. Games under way and finished games are kept. `LOBBY_TTL` (ms) changes the hour.
 - **Bots:** in the lobby the host clicks an open seat to add a bot, and the × on a bot to remove it. Bots play only from what their own seat can see.
 - **Someone left?** Their card shows **Away · let a bot play**; anyone at the table can click it. The game also does this by itself once a player the game is waiting on has been offline for a minute, as long as someone else is still connected. Their name reads "Name (Bot)" meanwhile, and the seat is theirs again the moment they reconnect. There are no automatic skips or forfeits.
 - Lobby **Seat recovery** provides a private recovery key. On another device, use **How to play → Recover a seat**. Protect this key like a password. Room invitations grant a new lobby seat, not control of an existing player.
@@ -152,7 +154,7 @@ Do not run `docker compose down -v` unless you intend to erase saved games.
 
 The implementation uses JavaScript ES modules and browser-native SVG/DOM rather than the originally proposed React/TypeScript/Socket.IO toolchain. Node's built-in HTTP, crypto, SQLite, and test libraries keep the application dependency-free. Every game command has an ID and expected revision; commands are serialized and persisted atomically before acknowledgement. A duplicate retry cannot spend resources twice. Reconnects receive a complete filtered snapshot.
 
-Intended for a few concurrent private games on one server. No public matchmaking, spectators, game timers, or additional expansions are included.
+Intended for a few concurrent games among friends on one server. Open tables are a plain list, not matchmaking; no spectators, game timers, or additional expansions are included.
 
 ## Credits
 
