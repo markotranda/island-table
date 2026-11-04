@@ -174,6 +174,38 @@ test('browser: during a game the name and options sit in the corners and the map
   }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
 });
 
+test('browser: six player cards always fit without scrolling and never change size',{skip,timeout:120000},async()=>{
+  const server=await startServer({BOT_AWAY:'600000'}),browser=await launch();let host;
+  try{
+    host=await sixSeats(browser,server);
+    // The hardest cards: longest name, both awards, big numbers, a stood-in seat, an away player.
+    const worst=g=>{hostTurn(g);g.awards.route=0;g.awards.army=0;Object.assign(g.players[0],{knights:12});g.players[1].bot=false;g.players[2].bot=false;g.players[2].auto=true;};
+    await stage(server,[host],(g,{setHand})=>{worst(g);setHand(0,{wood:9,brick:9,wool:9,wheat:9,ore:9});});
+    const cards=()=>host.eval(`(()=>{const s=document.querySelector('.sidebar'),c=[...s.querySelectorAll('.player')];const inside=(a,b)=>a.left>=b.left-.5&&a.right<=b.right+.5&&a.top>=b.top-.5&&a.bottom<=b.bottom+.5;return {n:c.length,heights:[...new Set(c.map(e=>Math.round(e.getBoundingClientRect().height)))],bottom:Math.max(...c.map(e=>e.getBoundingClientRect().bottom)),fits:s.scrollHeight<=s.clientHeight,scrolls:getComputedStyle(s).overflowY,statsIn:c.every(e=>[...e.querySelectorAll('.stat,.player-name,.points,.takeover,.badge')].every(k=>inside(k.getBoundingClientRect(),e.getBoundingClientRect()))),nameLines:Math.max(...c.map(e=>e.querySelector('.player-name').getBoundingClientRect().height)),page:document.documentElement.scrollHeight};})()`);
+    for(const [w,h] of [[1920,1080],[1440,900],[1366,768],[1280,720],[1100,700],[1000,600],[1366,650],[900,620]]){
+      await host.resize(w,h);await pause(150);const c=await cards(),at=`${w}x${h}`;
+      assert.equal(c.n,6);assert.equal(c.heights.length,1,`equal cards at ${at}: ${c.heights}`);assert.ok(c.fits,`no scroll in the column at ${at}`);assert.equal(c.scrolls,'hidden',at);assert.ok(c.bottom<=h,`last card in the window at ${at}: ${c.bottom}`);assert.ok(c.statsIn,`everything inside its card at ${at}`);assert.ok(c.nameLines<24,`names stay on one line at ${at}`);assert.equal(c.page,h,`page does not scroll at ${at}`);
+    }
+    // Shorter than the game fits: the page scrolls, the column still does not, and every card can be reached.
+    for(const h of [545,500]){await host.resize(1000,h);await pause(150);const c=await cards();assert.ok(c.fits&&c.page>h,`the page scrolls at height ${h}`);assert.ok(c.bottom<=c.page,'the last card can be reached');}
+    await host.resize(1280,720);
+    assert.ok(await host.has('[data-takeover="1"]'),'an away player offers the takeover');
+    assert.deepEqual(await host.eval(`[...document.querySelectorAll('.sidebar .player')[0].querySelectorAll('[data-award]')].map(e=>e.dataset.award).sort()`),['army','route']);
+    assert.match(await host.eval(`document.querySelector('[data-award="army"]').dataset.tip`),/^Largest Army, \+2 points\. 12 knights played$/);
+    assert.equal(await host.eval(`document.querySelector('[data-award="army"] b').textContent`),'12');
+    assert.equal(await host.eval(`document.querySelector('.sidebar .player-name').dataset.tip`),'Bartholomew Longfellow J','the tip keeps the whole name');
+    const size=async()=>(await cards()).heights;const home=await size();
+    assert.match(await host.text('.sidebar .player.active .badge'),/PLAYER 1/);
+    await stage(server,[host],g=>{g.role=2;});assert.match(await host.text('.sidebar .player.active .badge'),/PLAYER 2/);assert.deepEqual(await size(),home);
+    // The turn passes to the away player: their card keeps its size and offers the takeover instead of the badge.
+    await stage(server,[host],g=>{g.role=1;g.active=1;g.primary=1;});assert.deepEqual(await size(),home,'cards do not move when the turn passes');
+    assert.deepEqual(await host.eval(`(()=>{const c=document.querySelector('.sidebar .player.active');return [!!c.querySelector('[data-takeover="1"]'),!!c.querySelector('.badge')];})()`),[true,false]);
+    // Phone: the cards flow, with nothing spilling out.
+    await host.resize(390,844);await pause(150);const phone=await cards();assert.ok(phone.statsIn,'stats stay inside phone cards');assert.ok(await host.eval('document.documentElement.scrollWidth<=innerWidth'));assert.ok(await host.has('.control-sidebar [data-ui="supply"]'));
+    assert.deepEqual(host.errors,[]);
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip,timeout:120000},async()=>{
   const server=await startServer(),browser=await launch();const pages=[];
   try{
