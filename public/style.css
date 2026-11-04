@@ -324,7 +324,7 @@
 .trophy .ui-ico{width:64px;height:64px;filter:drop-shadow(0 2px 0 #8a6a3a) drop-shadow(0 6px 8px #b48a3e88)}
 .roll-hint .ui-ico{margin-right:3px}
 /* The game page is one screen: on desktop only the columns, the history and the trade panel scroll inside it. */
-@media(min-width:851px) and (min-height:546px){html:has(.game-layout){overflow:hidden}}
+@media(min-width:851px) and (min-height:575px){html:has(.game-layout){overflow:hidden}}
 /* Build cards: pieces left in the corner like a hand card; cost cards underlined green when in hand, red and faded when missing. */
 .build{position:relative}.build:disabled{opacity:1;filter:none}.build:disabled .build-piece,.build:disabled .build-name{opacity:.5;filter:saturate(.4)}
 .build-left{position:absolute;top:-8px;right:-8px;min-width:21px;height:21px;border-radius:11px;background:#203a3f;color:#fff;font-size:11px;letter-spacing:0;display:grid;place-items:center;padding:0 5px;border:2px solid #fffaf0}
@@ -406,3 +406,22 @@
 .supply-chip{display:flex;flex-direction:column;align-items:center;padding-top:3px;border-radius:5px;overflow:hidden;background:linear-gradient(var(--terrain) 0 22px,#fffaf0 22px);border:1px solid #cbbf9f;line-height:1}
 .supply-chip svg{width:16px;height:16px}.supply-chip b{font-size:11px;padding:4px 0 3px;color:#3a3326}
 .supply-chip.deck{background:#355650;border-color:#203a36}.supply-chip.deck b{color:#f1e2b6}.supply-chip .deck-back{height:16px;line-height:16px;font-size:13px;color:#f1e2b6}
+
+/* During a game the bar dissolves on wide screens: its name and options sit in the corners above the side columns, which share these widths. */
+.btn-icon{display:none;font-weight:800}
+.connection.offline .status-dot{background:#e0564a;box-shadow:0 0 0 3px #e0564a40}
+@media(min-width:851px){:root{--col-l:230px;--col-r:292px;--corner:58px}
+.game-layout{grid-template-columns:var(--col-l) minmax(320px,1fr) var(--col-r)}
+.topbar.over+.game-layout{height:100dvh;min-height:575px}
+.topbar.over{position:absolute;top:0;left:0;right:0;height:0;padding:0;border:0;background:none;box-shadow:none;z-index:5;pointer-events:none}
+.topbar.over .brand{position:absolute;top:0;left:0;width:var(--col-l);height:var(--corner);padding:0 18px;gap:8px;font-size:17px;line-height:1.12;white-space:normal;text-shadow:0 1px 2px #2a1c1080;pointer-events:auto}
+.topbar.over .brand-mark{font-size:24px}.topbar.over .brand-text span{display:block}.topbar.over .brand>.eyebrow{display:none}
+.topbar.over .right{position:absolute;top:0;right:0;width:var(--col-r);height:var(--corner);padding:0 22px;gap:6px;justify-content:flex-end;pointer-events:none}
+.topbar.over .right>*{pointer-events:auto}
+.topbar.over .btn-label{display:none}.topbar.over .btn-icon{display:inline}
+.topbar.over button{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 9px}
+.topbar.over .connection{background:none;border:0;padding:0 6px 0 0;line-height:0}.topbar.over .status-dot{margin:0}
+.topbar.over .connection-label{display:none}.topbar.over .connection.offline .connection-label{display:block;position:absolute;right:22px;top:44px;font-size:10px;line-height:12px;color:#fbefd6;text-shadow:0 1px 2px #2a1c10;pointer-events:none}
+.topbar.over+.game-layout .sidebar,.topbar.over+.game-layout .control-sidebar{margin-top:var(--corner);padding-top:2px}}
+@media(min-width:1500px){:root{--col-l:260px;--col-r:320px}}
+@media(min-width:851px) and (max-width:1250px){:root{--col-l:180px;--col-r:250px}.topbar.over .brand{padding:0 10px;font-size:14px;gap:6px}.topbar.over .brand-mark{font-size:20px}.topbar.over .right{padding:0 15px}.topbar.over .connection.offline .connection-label{right:15px}.sidebar{padding:22px 10px}.control-sidebar{padding:22px 15px}}

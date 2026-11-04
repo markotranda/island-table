@@ -148,6 +148,32 @@ test('browser: the supply sits in the right column in every phase but the end, w
   }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
 });
 
+test('browser: during a game the name and options sit in the corners and the map runs to the top of the window',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let host;
+  try{
+    host=await sixSeats(browser,server);await stage(server,[host],hostTurn);
+    const layout=()=>host.eval(`(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(),inside=(a,b)=>a.left>=b.left-.5&&a.right<=b.right+.5,side=r('.control-sidebar'),left=r('.sidebar'),wrap=r('.board-wrap'),opts=[...document.querySelectorAll('.topbar .right>*')].map(e=>e.getBoundingClientRect()),col=(l,w)=>({left:l,right:l+w}),gs=getComputedStyle(document.documentElement);return {wrapTop:wrap.top,brandH:r('.brand-text').bottom<=left.top+.5,brandIn:inside(r('.brand-text'),col(0,left.width)),brandW:r('.brand-text').right<=left.width,optsIn:opts.every(o=>o.left>=side.left-.5&&o.right<=innerWidth+.5&&o.bottom<=side.top+.5),hitsBoard:opts.some(o=>o.left<wrap.right&&o.right>wrap.left),pageW:document.documentElement.scrollWidth<=innerWidth,wrapH:wrap.height,free:innerHeight-r('.hand').height};})()`);
+    for(const [w,h] of [[1920,1080],[1440,900],[1280,720],[1100,700],[900,700]]){
+      await host.resize(w,h);await pause(150);const l=await layout();
+      assert.equal(l.wrapTop,0,`map reaches the top at ${w}x${h}`);assert.equal(l.wrapH,l.free,`map takes all height above the hand at ${w}x${h}`);
+      assert.ok(l.brandIn&&l.brandH,`name stays in its corner at ${w}x${h}`);assert.ok(l.optsIn&&!l.hitsBoard,`options stay in their corner at ${w}x${h}`);assert.ok(l.pageW,`no sideways scroll at ${w}x${h}`);
+    }
+    // Losing the connection shows, without touching the turn card or the board.
+    await host.resize(1100,700);await host.eval(`(()=>{const c=document.querySelector('.connection');c.classList.add('offline');c.querySelector('.connection-label').textContent='Reconnecting…';})()`);
+    const off=await host.eval(`(()=>{const l=document.querySelector('.connection-label').getBoundingClientRect(),t=document.querySelector('.turn-card').getBoundingClientRect(),w=document.querySelector('.board-wrap').getBoundingClientRect();return {seen:l.width>0,clearTurn:l.bottom<=t.top,clearMap:l.left>=w.right};})()`);
+    assert.deepEqual(off,{seen:true,clearTurn:true,clearMap:true});
+    await host.resize(1280,720);await host.reload();await host.waitFor(`document.querySelector('svg.board')`);
+    assert.equal(await host.eval(`document.querySelector('.connection').classList.contains('offline')&&document.querySelector('.connection-label').textContent`),false,'the live stream clears it');
+    // The options still work, and the rules window covers them.
+    await host.click('[data-ui="help"]');await host.waitFor(`document.querySelector('dl.help')`);
+    assert.equal(await host.eval(`(()=>{const b=document.querySelector('[data-ui="home"]').getBoundingClientRect();return !!document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('.topbar');})()`),false,'an open window sits above the corners');
+    assert.deepEqual(host.errors,[]);
+    // A phone keeps its bar, with words.
+    await host.reload();await host.waitFor(`document.querySelector('svg.board')`);await host.resize(390,844);await pause(150);
+    assert.deepEqual(await host.eval(`[getComputedStyle(document.querySelector('.topbar')).position,document.querySelector('[data-ui="help"] .btn-label').getBoundingClientRect().width>0,document.documentElement.scrollWidth<=innerWidth]`),['static',true,true]);
+  }finally{await host?.close().catch(()=>{});await browser.close();await server.stop();}
+});
+
 test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip,timeout:120000},async()=>{
   const server=await startServer(),browser=await launch();const pages=[];
   try{
