@@ -63,3 +63,39 @@ test('HTTP bots: they play their own seats, stand in for an offline player, and 
     hostStream.abort();
   }finally{for(const c of streams)c.abort();child.kill();await once(child,'exit');}
 });
+
+test('HTTP open tables: only public lobbies with a free seat and someone there; kicked seats stop working; empty lobbies are deleted',async()=>{
+  const dir=mkdtempSync(resolve('tmp','open-test-'));
+  const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:'0',HOST:'127.0.0.1',DATA_DIR:dir,LOBBY_TTL:'1500'},stdio:['ignore','pipe','pipe']});child.stderr.on('data',d=>process.stderr.write(d));
+  const base=await new Promise((resolve,reject)=>{let text='';const timer=setTimeout(()=>reject(new Error('Server did not start')),10000);child.stdout.on('data',d=>{text+=d;const m=text.match(/http:\/\/localhost:(\d+)/);if(m){clearTimeout(timer);resolve(`http://127.0.0.1:${m[1]}`);}});});
+  const req=async(path,token,body)=>{const res=await fetch(base+path,{method:body?'POST':'GET',headers:{...(token?{Authorization:`Bearer ${token}`}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:res.status,body:await res.json()};};
+  const send=async(path,token,type,extra={})=>{const g=(await req(path,token)).body;return req(path+'/commands',token,{id:crypto.randomUUID(),revision:g.revision,command:{type,...extra}});};
+  const until=async(ok,label,ms=10000)=>{const end=Date.now()+ms;while(Date.now()<end){const v=await ok();if(v)return v;await new Promise(r=>setTimeout(r,50));}throw new Error('timed out: '+label);};
+  const listed=async id=>(await req('/api/rooms')).body.find(r=>r.id===id);
+  // A stream that ends on its own resolves `ended`; aborting it is how a test closes the tab.
+  const streams=[];const listen=async(path,token)=>{const c=new AbortController();streams.push(c);const res=await fetch(base+path+'/events',{headers:{Authorization:`Bearer ${token}`},signal:c.signal});const ended=(async()=>{for await(const _ of res.body);return true;})().catch(()=>false);return {c,ended};};
+  try{
+    const host=(await req('/api/rooms',null,{name:'Ana'})).body,path=`/api/rooms/${host.room}`;
+    assert.equal(await listed(host.room),undefined,'nobody is at the table yet');
+    const h=await listen(path,host.token);
+    const row=await until(()=>listed(host.room),'listed');assert.deepEqual(Object.keys(row).sort(),['goal','host','id','map','players','seats']);assert.deepEqual(row,{id:host.room,host:'Ana',players:1,seats:4,map:'base',goal:10});
+    // A private lobby is not listed.
+    const other=(await req('/api/rooms',null,{name:'Ivo'})).body,opath=`/api/rooms/${other.room}`;await listen(opath,other.token);assert.equal((await send(opath,other.token,'settings',{public:false})).status,200);
+    await new Promise(r=>setTimeout(r,100));assert.equal(await listed(other.room),undefined);
+    // Kicking: the kicked seat's stream closes and its token is refused with a message.
+    const guest=(await req(path+'/join',null,{name:'Bo'})).body,g=await listen(path,guest.token);
+    assert.equal((await listed(host.room)).players,2);
+    assert.equal((await send(path,host.token,'kick',{player:1})).status,200);
+    assert.equal(await g.ended,true,'kicked stream ends');const refused=await req(path,guest.token);assert.equal(refused.status,401);assert.match(refused.body.error,/removed you/);
+    assert.equal((await req(path+'/commands',guest.token,{id:crypto.randomUUID(),revision:0,command:{type:'ready'}})).status,401);
+    // A full lobby is not listed.
+    for(let i=0;i<3;i++)assert.equal((await send(path,host.token,'addBot')).status,200);
+    assert.equal(await listed(host.room),undefined,'full');assert.equal((await send(path,host.token,'removeBot',{player:3})).status,200);await until(()=>listed(host.room),'listed again');
+    // A started game is never listed or cleaned up; an abandoned lobby is hidden at once and deleted after LOBBY_TTL.
+    const game=(await req('/api/rooms',null,{name:'Cy'})).body,gpath=`/api/rooms/${game.room}`;const gs=await listen(gpath,game.token);await send(gpath,game.token,'addBot');await send(gpath,game.token,'ready');assert.equal((await send(gpath,game.token,'start')).status,200);
+    assert.equal(await listed(game.room),undefined,'started');gs.c.abort();
+    h.c.abort();await until(async()=>!(await listed(host.room)),'hidden when empty');
+    await until(async()=>(await req(path,host.token)).status===404,'lobby deleted',8000);
+    assert.equal((await req(gpath,game.token)).status,200,'a game under way is kept');assert.equal((await req(opath,other.token)).status,200,'a lobby someone is at is kept');
+  }finally{for(const c of streams)c.abort();const exited=once(child,'exit');child.kill();await exited;}
+});

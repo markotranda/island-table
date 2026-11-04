@@ -43,12 +43,14 @@ function remember(){saved[session.room]={...saved[session.room],...session,at:Da
 // A seat a bot is playing for someone away reads "Name (Bot)" everywhere; who is connected comes only with the live stream.
 let onlineIds=[];function named(s){for(const p of s.players)if(p.auto&&!p.name.endsWith(' (Bot)'))p.name+=' (Bot)';return s;}
 function accept(next){named(next);const arrived=next.online&&next.online.join()!==onlineIds.join();if(next.online)onlineIds=next.online;markOver(room,next.phase==='finished');if(!state||next.revision!==state.revision){const samePhase=state&&next.active===state.active&&next.phase===state.phase;if(!samePhase)mode='';const started=state?.phase==='lobby'&&next.phase!=='lobby';state=next;render(samePhase);if(started)window.scrollTo({top:0});}else{state=next;if(arrived&&state.phase!=='lobby')render(true);}}
+// A seat that stopped working (the host removed you, or an empty lobby was cleaned up) is forgotten and you are taken home.
+function leave(message){if(session){delete saved[session.room];store();}streamController?.abort();state=null;session=null;mode='';history.replaceState({},'','/');render();if(message)toast(message);}
 async function connect(){
   streamController?.abort();streamController=new AbortController();const controller=streamController;
   while(!controller.signal.aborted){
     try{
       const res=await fetch(`/api/rooms/${session.room}/events`,{headers:{Authorization:`Bearer ${session.token}`},signal:controller.signal});
-      if(!res.ok)throw new Error('Connection interrupted');connected=true;document.querySelectorAll('.connection-label').forEach(e=>e.textContent='Connected');
+      if([401,404].includes(res.status)){const m=(await res.json().catch(()=>({}))).error;if(!controller.signal.aborted)leave(m);return;}if(!res.ok)throw new Error('Connection interrupted');connected=true;document.querySelectorAll('.connection-label').forEach(e=>e.textContent='Connected');
       const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='';
       while(true){const {value,done}=await reader.read();if(done)throw new Error('Stream ended');buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,i);buffer=buffer.slice(i+2);if(block.startsWith('data: '))accept(JSON.parse(block.slice(6)));}}
     }catch(e){if(controller.signal.aborted)return;connected=false;document.querySelectorAll('.connection-label').forEach(e=>e.textContent='Reconnecting…');await new Promise(r=>setTimeout(r,1800));}
@@ -112,6 +114,7 @@ async function command(type,extra={},retries=5){
     // The live stream often delivers this revision first; redrawing again would replace controls mid-click.
     const closing=mode!=='';mode='';if(next.revision>state.revision){state=named(next);render();}else if(closing)render();}
   catch(e){
+    if([401,404].includes(e.status)){leave(e.message);return;}
     if(e.status===409){state=named(await request(`/api/rooms/${session.room}`));
       if(retries>0&&context!==null&&retryContext(type)===context){busy=null;release();return command(type,extra,retries-1);}render(true);}
     toast(e.message);}

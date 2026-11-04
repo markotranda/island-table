@@ -22,12 +22,13 @@ const read=id=>{const row=db.prepare('SELECT state FROM rooms WHERE id=?').get(i
 const save=g=>db.prepare('INSERT INTO rooms(id,state) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(g.id,JSON.stringify(g));
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
 function json(res,status,body){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));}
-function session(req,id){const token=(req.headers.authorization||'').replace(/^Bearer /,'');if(!/^[a-f0-9]{64}$/.test(token))throw Object.assign(new Error('Rejoin this room using your saved seat.'),{status:401});const row=db.prepare('SELECT player FROM sessions WHERE token=? AND room=?').get(tokenHash(token),id);if(!row)throw Object.assign(new Error('Invalid seat credential.'),{status:401});return row.player;}
-function broadcast(g){for(const c of clients.get(g.id)||[]){const p=g.players.findIndex(pl=>pl.id===c.player);if(p>=0)c.res.write(`data: ${JSON.stringify({...view(g,p),online:[...new Set([...(clients.get(g.id)||[])].map(s=>s.player))]})}\n\n`);}}
+function session(req,id,g){const token=(req.headers.authorization||'').replace(/^Bearer /,'');if(!/^[a-f0-9]{64}$/.test(token))throw Object.assign(new Error('Rejoin this room using your saved seat.'),{status:401});const row=db.prepare('SELECT player FROM sessions WHERE token=? AND room=?').get(tokenHash(token),id);if(!row)throw Object.assign(new Error('Invalid seat credential.'),{status:401});if(!g.players.some(pl=>pl.id===row.player))throw Object.assign(new Error('The host removed you from this table.'),{status:401});return row.player;}
+function broadcast(g){for(const c of clients.get(g.id)||[]){const p=g.players.findIndex(pl=>pl.id===c.player);if(p<0)c.res.end();else c.res.write(`data: ${JSON.stringify({...view(g,p),online:[...new Set([...(clients.get(g.id)||[])].map(s=>s.player))]})}\n\n`);}}
 // Bots: after every change, a room where a bot (or a bot standing in for an offline player) owes a move gets one timer. When it fires,
 // each such seat is asked in turn, from its own view and the state read inside the transaction, and the first real move is applied.
 // The pause lets people follow along; BOT_PACE scales it (tests run them fast).
 const pace=Number(process.env.BOT_PACE??1),timers=new Map(),offerSeen=new Map(),away=new Map(),watched=new Set(),started=Date.now(),awayMs=Number(process.env.BOT_AWAY??60000);
+const seen=new Map(),lobbyTtl=Number(process.env.LOBBY_TTL??3600000);
 const online=id=>new Set([...(clients.get(id)||[])].map(c=>c.player)),plays=pl=>pl&&(pl.bot||pl.auto);
 const PAUSE={order:700,setupSettlement:1500,setupRoad:900,preRoll:1100,discard:1000,robber:1400,steal:900,monopoly:900,invention:900,freeRoads:900};
 function commit(id,fn){let next=null;transaction(()=>{const current=read(id);next=fn(current);if(!next)return;next.revision=current.revision+1;save(next);});if(next){broadcast(next);wake(id);}return next;}
@@ -49,7 +50,7 @@ const waitsOn=g=>g.phase==='action'?[g.active]:pending(g);
 const presence=setInterval(()=>{for(const id of watched){try{const g=read(id);if(['lobby','finished'].includes(g.phase))continue;const here=online(id);
   for(const p of waitsOn(g)){const pl=g.players[p];if(plays(pl)||offlineFor(id,pl.id)<awayMs||!g.players.some(o=>!o.bot&&o.id!==pl.id&&here.has(o.id)))continue;commit(id,c=>{const t=c.players[p];return t&&!plays(t)&&offlineFor(id,t.id)>=awayMs?apply(c,p,{type:'takeover',player:p,auto:true},randomInt):null;});break;}}catch{watched.delete(id);}}},Math.min(5000,awayMs/2));presence.unref();
 function release(id,p){return commit(id,g=>g.players[p]?.auto?apply(g,p,{type:'release'},randomInt):null);}
-function register(g,name){const token=randomBytes(32).toString('hex'),id=randomBytes(12).toString('hex');addPlayer(g,id,name);g.revision++;db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(tokenHash(token),g.id,id);save(g);return {room:g.id,token};}
+function register(g,name){seen.set(g.id,Date.now());const token=randomBytes(32).toString('hex'),id=randomBytes(12).toString('hex');addPlayer(g,id,name);g.revision++;db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(tokenHash(token),g.id,id);save(g);return {room:g.id,token};}
 async function body(req){let text='';for await(const chunk of req){text+=chunk;if(Buffer.byteLength(text)>16384)throw Object.assign(new Error('Request too large.'),{status:413});}try{return JSON.parse(text||'{}');}catch{throw new Error('Invalid JSON.');}}
 function rate(req){const ip=req.socket.remoteAddress,now=Date.now();let bucket=rates.get(ip);if(!bucket||bucket.until<now){bucket={count:0,until:now+60000};rates.set(ip,bucket);}if(++bucket.count>600)throw Object.assign(new Error('Too many requests. Please wait a moment.'),{status:429});}
 const server=http.createServer(async(req,res)=>{
@@ -65,11 +66,12 @@ const server=http.createServer(async(req,res)=>{
       if(req.method==='POST'&&url.pathname==='/api/rooms') {
         const b=await body(req);const result=transaction(()=>{const g=newGame(randomBytes(6).toString('hex'),b.map,b.setup);return register(g,b.name);});return json(res,201,result);
       }
+      // Open tables: public lobbies with a free seat and someone from the table here now. Only rooms with a stream open are looked at.
+      if(req.method==='GET'&&url.pathname==='/api/rooms')return json(res,200,[...clients.keys()].flatMap(id=>{try{const g=read(id);return g.phase==='lobby'&&g.public&&g.players.length<g.seats&&g.players.some(pl=>!pl.bot&&online(id).has(pl.id))?[{id,host:g.players[0]?.name??'',players:g.players.length,seats:g.seats,map:g.map,goal:g.goal}]:[];}catch{return [];}}).sort((a,b)=>b.players-a.players||a.id.localeCompare(b.id)));
       const match=url.pathname.match(/^\/api\/rooms\/([a-f0-9]{12})(?:\/(join|events|commands))?$/);if(!match)return json(res,404,{error:'Endpoint not found.'});
       const [,id,action]=match;
       if(action==='join'&&req.method==='POST'){const b=await body(req);const result=transaction(()=>register(read(id),b.name));broadcast(read(id));watched.add(id);return json(res,201,result);}
-      const player=session(req,id),g=read(id),p=g.players.findIndex(pl=>pl.id===player);
-      if(p<0)throw new Error('Seat not found.');
+      const g=read(id),player=session(req,id,g),p=g.players.findIndex(pl=>pl.id===player);
       if(action==='events'&&req.method==='GET') {
         const set=clients.get(id)||new Set();if(set.size>=24)throw new Error('Too many open tabs for this room.');
         res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});res.write(': connected\n\n');
@@ -77,11 +79,11 @@ const server=http.createServer(async(req,res)=>{
         // Coming back takes the seat back from a bot standing in.
         if(!(g.players[p].auto&&release(id,p)))broadcast(g);
         const keepalive=setInterval(()=>res.write(': heartbeat\n\n'),15000);
-        req.on('close',()=>{clearInterval(keepalive);set.delete(client);if(!set.size)clients.delete(id);if(!online(id).has(player)){const m=away.get(id)??new Map();m.set(player,Date.now());away.set(id,m);}if(clients.has(id))broadcast(read(id));});return;
+        req.on('close',()=>{clearInterval(keepalive);seen.set(id,Date.now());set.delete(client);if(!set.size)clients.delete(id);if(!online(id).has(player)){const m=away.get(id)??new Map();m.set(player,Date.now());away.set(id,m);}if(clients.has(id))broadcast(read(id));});return;
       }
       if(!action&&req.method==='GET')return json(res,200,view(g,p));
       if(action==='commands'&&req.method==='POST') {
-        const b=await body(req);if(typeof b.id!=='string'||!/^[-a-zA-Z0-9]{8,80}$/.test(b.id))throw new Error('Invalid command identifier.');
+        seen.set(id,Date.now());const b=await body(req);if(typeof b.id!=='string'||!/^[-a-zA-Z0-9]{8,80}$/.test(b.id))throw new Error('Invalid command identifier.');
         // A player acting again takes their seat back first, in its own commit, so a stale command doesn't undo the return.
         if(g.players[p].auto)release(id,p);
         let next;
@@ -103,6 +105,9 @@ const server=http.createServer(async(req,res)=>{
     res.writeHead(200,{'Content-Type':file[1],'Cache-Control':'no-cache'});res.end(readFileSync(resolve(root,'public',file[0])));
   }catch(e){if(!res.headersSent)json(res,e.status||400,{error:e.message||'Request failed.'});else res.end();}
 });
+// A lobby nobody has been at for LOBBY_TTL (an hour) is deleted with its seats. Games under way or finished are kept.
+function forget(id){db.prepare('DELETE FROM commands WHERE room=?').run(id);db.prepare('DELETE FROM sessions WHERE room=?').run(id);db.prepare('DELETE FROM rooms WHERE id=?').run(id);}
+const sweep=setInterval(()=>{const now=Date.now();for(const {id} of db.prepare("SELECT id FROM rooms WHERE json_extract(state,'$.phase')='lobby'").all()){if(clients.has(id)||now-(seen.get(id)??started)<lobbyTtl)continue;try{transaction(()=>{if(read(id).phase==='lobby')forget(id);});for(const m of [timers,offerSeen,away,seen])m.delete(id);watched.delete(id);}catch(e){console.error(`Cleaning up room ${id} failed:`,e.message);}}},Math.max(200,Math.min(60000,lobbyTtl/2)));sweep.unref();
 const cleanup=setInterval(()=>{for(const [k,v]of rates)if(v.until<Date.now())rates.delete(k);},60000);cleanup.unref();
 // Rooms where bots or stand-ins owe a move pick up where they left off after a restart.
 for(const {id,state} of db.prepare('SELECT id,state FROM rooms').all()){try{const g=JSON.parse(state);if(!['lobby','finished'].includes(g.phase)&&g.players.some(plays))wake(id);}catch{}}
