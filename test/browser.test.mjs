@@ -180,7 +180,7 @@ test('browser: six player cards always fit without scrolling and never change si
     host=await sixSeats(browser,server);
     // The hardest cards: longest name, both awards, big numbers, a stood-in seat, an away player.
     const worst=g=>{hostTurn(g);g.awards.route=0;g.awards.army=0;Object.assign(g.players[0],{knights:12});g.players[1].bot=false;g.players[2].bot=false;g.players[2].auto=true;};
-    await stage(server,[host],(g,{setHand})=>{worst(g);setHand(0,{wood:9,brick:9,wool:9,wheat:9,ore:9});});
+    await stage(server,[host],(g,{setHand,deal})=>{worst(g);setHand(0,{wood:9,brick:9,wool:9,wheat:9,ore:9});for(const t of ['knight','knight','monopoly','invention','roads','vp'])deal(0,t);});
     const cards=()=>host.eval(`(()=>{const s=document.querySelector('.sidebar'),c=[...s.querySelectorAll('.player')];const inside=(a,b)=>a.left>=b.left-.5&&a.right<=b.right+.5&&a.top>=b.top-.5&&a.bottom<=b.bottom+.5;return {n:c.length,heights:[...new Set(c.map(e=>Math.round(e.getBoundingClientRect().height)))],bottom:Math.max(...c.map(e=>e.getBoundingClientRect().bottom)),fits:s.scrollHeight<=s.clientHeight,scrolls:getComputedStyle(s).overflowY,statsIn:c.every(e=>[...e.querySelectorAll('.stat,.player-name,.points,.takeover,.badge')].every(k=>inside(k.getBoundingClientRect(),e.getBoundingClientRect()))),nameLines:Math.max(...c.map(e=>e.querySelector('.player-name').getBoundingClientRect().height)),page:document.documentElement.scrollHeight};})()`);
     for(const [w,h] of [[1920,1080],[1440,900],[1366,768],[1280,720],[1100,700],[1000,600],[1366,650],[900,620]]){
       await host.resize(w,h);await pause(150);const c=await cards(),at=`${w}x${h}`;
