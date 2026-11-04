@@ -376,3 +376,12 @@ Plan: [`work/009-lobby-colours.md`](work/009-lobby-colours.md), reviewed by a se
 - **Your colour, not your seat's.** Your seat card in the lobby has six swatches. A free colour is yours at once, a bot swaps with you, and a person gets a request to accept or decline.
 - **It stays.** Someone leaving no longer recolours the others, and a rematch keeps everyone's colour.
 - **Five players on a fixed island.** The rulebook's colour draw really decides who starts where, so the starting spots are still drawn at random and the chosen colours stay.
+
+## 16. More map, a sidebar that stays still
+
+Plan: [`work/010-bigger-map-fixed-sidebar.md`](work/010-bigger-map-fixed-sidebar.md), reviewed by a second agent over two rounds.
+
+- **No banner during a game.** The name sits above the player cards and the options, now icons, above the right column. The map runs to the top of the window: 16% taller at 1280×720.
+- **Six cards, no scrolling.** The left column holds only player cards, all one size, so nothing moves when the turn passes. A held award lights the matching stat in gold.
+- **The supply** is a slim row under the turn card, in view all game.
+- **Build is never hidden.** Development cards overlap when space is tight; before, a few kinds of card pushed the Build buttons under the story log at 1280 wide.

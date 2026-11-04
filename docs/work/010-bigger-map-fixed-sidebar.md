@@ -1,6 +1,6 @@
 # 010: Bigger map, fixed player sidebar, a new home for the supply
 
-**Status:** in progress · **Commits:** —
+**Status:** done · **Commits:** 9763257, 14280b4, 8822e5c, e648791, 0ca8090, and the docs commit
 
 ## Feedback
 2026-11-04, owner:
@@ -82,8 +82,17 @@ Round 2 (REVISE, "no need for a full further round"), all accepted: `flex:1 1 0`
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
+| 1 Supply | done | 9763257 | Row is about 96px with its margin, more than the 50px estimated; the log absorbs it. |
+| 2 Banner | done | 14280b4 | 479→555px at 1280×720, 839→915px at 1920×1080, as predicted. Committed with one failing test by mistake: see the flake note. |
+| 3 Cards | done | 8822e5c, e648791 | The screenshot caught what the test missed: gold stats spilled out once a player held dev cards. Test now deals them; the printed +2 went (2b). |
+| 4 Hand | done | 0ca8090 | Hand padding 12px up to 1400 wide, or 1251 wide had no room for five kinds. Build wraps only when the cards really do not fit (1 kind fits from 1092 wide, 2+ kinds from 1150, none from 1040), because a forced row cost the map 105px at 1100 wide. Turn label cleared of its seal and narrow fans slimmed, since the narrow columns now reach 1250. |
+| 5 Docs | done | see git log | Review script has a six-player shot; README screenshots refreshed. |
+
+**Flake:** `browser: invite, lobby, live setup…` failed once in a full run ("the starting roll result was not held on every screen", 0 of 3) and then passed 6 of 6 alone and in every later full run. Its polling can miss the 3 s hold under load. Unrelated to layout, not fixed here: item 011.
 
 ## Not verified
+- A real phone or touch screen. On touch at 1100–1400 wide, an overlapped dev card shows only its edge; a long press gives the tip.
+- The owner's real six-person game, and how the icon-only options feel. "How to play" and "Invite friends" lost their words on desktop.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. Step 1 is next.
+Done. Leftover: item 011.

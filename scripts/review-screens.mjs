@@ -65,7 +65,7 @@ try{
   // Tooltips: a road (with its owner's longest route lit) and a development card.
   await me.hover('.road[data-owner="1"]');await me.waitFor(`document.querySelector('#tip.visible')`);await shot(me,'13-road-tip');
   await me.hover('[data-type="knight"]');await me.waitFor(`document.querySelector('#tip.visible')?.textContent.includes('Knight')`);await shot(me,'14-card-tip');
-  await me.hover('.topbar');await pause(200);
+  await me.hover('.brand');await pause(200);
   // The active player posts an offer; one player accepts and another counters, then the active player opens the trade panel.
   const post=(page,values,counter)=>page.eval(`(async()=>{document.querySelector(${JSON.stringify(counter?'.offer [data-counter]':'[data-mode="trade"]')}).click();const f=document.getElementById('trade');for(const [k,v] of Object.entries(${JSON.stringify(values)})){const e=f.elements.namedItem(k);e.value=String(v);e.dispatchEvent(new Event('change',{bubbles:true}));}f.requestSubmit();})()`);
   await post(me,{'give-wool':1,'want-brick':1});const accepter=pages[(viewer+1)%4],counterer=pages[(viewer+3)%4];
@@ -91,6 +91,11 @@ try{
   await pause(1250);await shot(watcher,'12-roll-seen');
   await pause(800);
   // Game over.
-  await stage(g=>{g.phase='finished';g.winner=0;g.offers=[];delete g.discards;delete g.resumePhase;const extra=g.board.vertices.filter(v=>v.building?.owner===0&&v.building.kind==='settlement');extra.forEach(v=>v.building.kind='city');while(score(g,0,true)<10){const i=g.deck.lastIndexOf('vp');g.deck.splice(i,1);g.players[0].cards.push({type:'vp',bought:-1,id:'review-vp-final-'+g.players[0].cards.length});}g.events.push({turn:g.turn,text:`Mara wins with ${score(g,0,true)} points!`});});
+  await stage(g=>{g.phase='finished';g.winner=0;g.offers=[];delete g.discards;delete g.resumePhase;const extra=g.board.vertices.filter(v=>v.building?.owner===0&&v.building.kind==='settlement');extra.forEach(v=>v.building.kind='city');while(score(g,0,true)<10){const i=g.deck.lastIndexOf('vp');g.deck.splice(i,1);g.players[0].cards.push({type:'vp',bought:-1,id:'review-vp-final-'+g.players[0].cards.length});}g.events.push({id:(g.eventSeq=(g.eventSeq??g.events.length)+1),turn:g.turn,text:`Mara wins with ${score(g,0,true)} points!`});});
   await shot(pages[1],'10-game-over');
+  // A full table on a laptop window: six player cards, no scrolling, the supply under the turn card.
+  const six=await browser.newPage({width:1280,height:720});pages.push(six);await six.goto(base);await six.type('#nickname','Mara');await six.click('#entry button.primary');await six.waitFor(`document.querySelector('[data-command="ready"]')`);
+  await six.eval(`(()=>{const s=document.querySelector('[data-setting="map"]');s.value='extended';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);await six.waitFor(`document.querySelector('[data-ui="settings"]').dataset.map==='extended'`);
+  for(let n=1;n<=5;n++){await six.click('[data-command="addBot"]');await six.waitFor(`document.querySelectorAll('[data-bot]').length===${n}`);}
+  await six.click('[data-command="ready"]');await six.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await six.click('[data-command="start"]');await six.waitFor(`document.querySelector('svg.board')`);await shot(six,'16-six-players');
 }finally{for(const p of pages)await p.close().catch(()=>{});await browser.close();const exited=new Promise(r=>server.on('exit',r));server.kill();await exited;}

@@ -78,7 +78,7 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, `PUBLIC_ORIGIN`, and `LO
 ## Play and reconnect
 
 - The server validates all moves and supplies dice, shuffles, and random thefts.
-- Tap the glowing dice to roll. Build from the bar beside your hand, then click a highlighted edge or intersection; Esc cancels. **How to play** explains the rules in-game.
+- Tap the glowing dice to roll. Build from the bar beside your hand, then click a highlighted edge or intersection; Esc cancels. **How to play** (the **?** at the top right during a game) explains the rules.
 - On your turn, open **Trade → Players** to offer a trade to everyone, or **Supply** for 4:1 and port trades. Other players accept, decline or **Counter**; you confirm with one of the players who accepted. Close the trade panel to hide offers until a new one arrives.
 - When only one player can be robbed, the robber steals from them at once.
 - Only you receive your private cards. Your own score includes hidden Victory Point cards; other players see your public score until the game ends.
