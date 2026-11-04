@@ -56,7 +56,7 @@ The live connection uses HTTP server-sent events (SSE), not WebSockets. Disable 
 
 ## Run on a home server from the published image
 
-Every push to `main` runs the tests and, if they pass, publishes `ghcr.io/markotranda/island-table` (amd64 and arm64) with the tags `latest`, `1.0.<build number>`, and `sha-<commit>`. See `.github/workflows/publish.yml`.
+Every push to `main` runs the tests and, if they pass, publishes `ghcr.io/markotranda/island-table` (amd64 and arm64) with the tags `latest`, `1.0.<build number>`, and `sha-<commit>`. A newer push cancels a build still running, so build numbers can skip. See `.github/workflows/publish.yml`.
 
 The image is public, so no registry login is needed. Copy `compose.yaml` (and optionally `.env.example` as `.env`) into a folder on the server, then start it:
 

@@ -2,6 +2,7 @@ name: Publish image
 
 # Every push to main is tested, then published to GitHub Container Registry as
 # ghcr.io/<owner>/island-table with tags: latest, 1.0.<run number>, and sha-<commit>.
+# A newer push cancels a run still going: only the latest build matters.
 on:
   push:
     branches: [main]
@@ -13,10 +14,11 @@ permissions:
 
 concurrency:
   group: publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   test:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +28,7 @@ jobs:
       - run: npm test
 
   publish:
+    timeout-minutes: 30
     needs: test
     runs-on: ubuntu-latest
     steps:
