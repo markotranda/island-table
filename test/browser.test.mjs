@@ -33,12 +33,14 @@ async function joinByInvite(page,link,name){
 }
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 // Everyone taps their dice for the first turn at the same moment, again after a tie, until the starting roll is over.
+// Returns the pages that saw the result held on screen ("… goes first!", no dice left to roll) before the card went away.
 async function rollForStart(pages){
-  for(let step=0;step<60;step++){
+  const held=new Set();
+  for(let step=0;step<80;step++){
     const ready=[];for(const page of pages)if(await page.has('[data-command="firstRoll"]'))ready.push(page);
     if(ready.length)await Promise.all(ready.map(page=>page.click('[data-command="firstRoll"]').catch(()=>{})));
-    let open=false;for(const page of pages)if(await page.has('[data-ui="order"]'))open=true;
-    if(!open)return;await pause(150);
+    let open=false;for(const page of pages)if(await page.has('[data-ui="order"]')){open=true;if(await page.eval(`document.querySelector('[data-ui="order"][data-held="first"] h2')?.textContent.includes('goes first')&&!document.querySelector('[data-command="firstRoll"]')`))held.add(page);}
+    if(!open||held.size===pages.length)return held;await pause(150);
   }
   throw new Error('The starting roll did not finish');
 }
@@ -88,12 +90,12 @@ async function resolveRoll(pages,active){
 }
 async function playTurn(pages,page){await page.click('[data-command="roll"]');await resolveRoll(pages,page);await page.click('[data-command="end"]');}
 // Seats players in join order, so pages[i] is seat i, readies everyone and starts.
-async function seatTable(browser,server,count,setup){
+async function seatTable(browser,server,count,setup,roll=true){
   const pages=[];for(let i=0;i<count;i++)pages.push(await browser.newPage());
   await createTable(pages[0],server.host,'Seat 0',count>4?'extended':'base',setup);const room=await pages[0].eval('document.querySelector(\'input[aria-label="Invitation code"]\').value');
   for(let i=1;i<count;i++)await joinByInvite(pages[i],`${server.invite}/?room=${room}`,`Seat ${i}`);
   for(const page of pages){await page.click('[data-command="ready"]');await page.waitFor(`document.querySelector('[data-command="ready"]')?.textContent.includes('Not ready')`);}
-  await pages[0].click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);await rollForStart(pages);
+  await pages[0].click('[data-command="start"]');for(const page of pages)await page.waitFor(`document.querySelector('svg.board')`);if(roll)await rollForStart(pages);
   return pages;
 }
 // Test fixture only: rewrites the saved game between commands to stage a situation dice cannot be relied on to produce,
@@ -144,7 +146,9 @@ test('browser: invite, lobby, live setup, turns, reload and seat recovery',{skip
     // Everyone rolls their own dice for the first turn, all at the same moment; conflicts resolve without a "try again".
     assert.match(await phaseLabel(host),/STARTING ROLL/);
     for(const page of pages)assert.ok(await page.has('[data-ui="order"] [data-command="firstRoll"]'),'everyone has their own dice to roll');
-    await listen(pages);await rollForStart(pages);
+    await listen(pages);const held=await rollForStart(pages);
+    // The result stays up for a moment after the last roll, so everyone sees who rolled what.
+    assert.equal(held.size,pages.length,'the starting roll result was not held on every screen');
     for(const page of pages){await heard(page,'roll');await page.waitFor(`document.querySelector('.log-list')?.textContent.includes('goes first')`,{message:'the starting roll winner is not in the history'});assert.match(await phaseLabel(page),/FOUNDATIONS/);assert.doesNotMatch(await page.text('#toast'),/try again/);}
     assert.match(await host.text('.table-line'),/First to 12 points/);
 
@@ -194,6 +198,20 @@ test('browser: phone-width home and lobby fit without horizontal scrolling',{ski
     assert.equal(await page.waitFor(`(()=>{const k=Object.keys(JSON.parse(localStorage.getItem('island-seats')));return k.length===1&&k[0];})()`,{message:'Stale saved seats were not cleaned up'}),await page.eval(`document.querySelector('[data-resume]')?.dataset.resume`));
     assert.deepEqual(page.errors,[]);
   }finally{await page?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+
+test('browser: a tie in the starting roll stays on screen before the tied players roll again',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[];
+  try{
+    pages=await seatTable(browser,server,3,'fixed',false);
+    // Seats 0 and 1 have rolled double six, so whatever seat 2 rolls ends the round in a tie at 12.
+    await stage(server,pages,g=>{for(const p of [0,1]){g.order.dice[p]=[6,6];g.order.done.push(p);g.events.push({id:++g.eventSeq,turn:g.turn,kind:'order',p,dice:[6,6],round:1});}});
+    await pages[2].click('[data-command="firstRoll"]');
+    for(const page of pages){await page.waitFor(`document.querySelector('[data-ui="order"][data-held="tie"]')`,{message:'the tie was not held'});assert.match(await page.text('[data-ui="order"] h2'),/Tie at 12!/);assert.ok(!await page.has('[data-command="firstRoll"]'),'no one rolls again during the hold');assert.equal(await page.eval(`document.querySelectorAll('[data-ui="order"] [data-order] .order-dice').length`),3,'every roll stays visible');}
+    await pages[0].waitFor(`document.querySelector('[data-command="firstRoll"]')&&!document.querySelector('[data-held]')`,{message:'the tied players never got to roll again'});
+    const held=await rollForStart(pages);assert.equal(held.size,pages.length,'the winner was not held on every screen');
+    for(const page of pages)assert.deepEqual(page.errors,[]);
+  }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
 
 test('browser: discards, player and bank trades, and every development card',{skip,timeout:180000},async()=>{

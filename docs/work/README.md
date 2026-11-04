@@ -13,6 +13,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Finished |
 |---|---|---|
+| 007 | [Keep the starting roll on screen](007-starting-roll-hold.md) | 2026-11-04 |
 | 001 | [Feedback from the first game](001-feedback-round-1.md) | 2026-11-03 |
 | 002 | [Feedback from the second game](002-feedback-round-2.md) | 2026-11-03 |
 | 003 | [Feedback from the third game](003-feedback-round-3.md) | 2026-11-03 |

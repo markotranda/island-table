@@ -371,6 +371,9 @@
 .order-row .dot{width:12px;height:12px;border-radius:50%;background:var(--player);border:1px solid #2a211966;flex:none}
 .order-name{flex:1;font-weight:650;color:#2f2a20}
 .order-row.out{opacity:.5}.order-row.leading{background:#fffaf0;border-color:#f2c94c}
+.order-card.held{animation:order-hold 3s linear forwards;animation-delay:var(--t,0ms)}.order-card.done{pointer-events:none}
+@keyframes order-hold{0%,88%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.order-card.held{animation:none}}
 .order-dice{display:flex;align-items:center;gap:5px}.order-dice b{min-width:26px;text-align:right;font:700 18px Georgia,serif;color:#2f2a20}
 .order-dice.tumbling .die-wrap{animation:tumble .85s cubic-bezier(.2,.8,.3,1) both;animation-delay:var(--t)}
 .order-row .table-dice.order-roll{position:static;flex-direction:row;padding:6px 10px;gap:6px}

@@ -353,3 +353,9 @@ Plan: [`work/004-bots.md`](work/004-bots.md), reviewed by a second agent over th
 - **Average strength.** One build ahead, a bit of chance in its picks, one simple 1-for-1 offer on about half its turns, accepts trades that help it (not from someone about to win), spends down big hands. Against the simple scripted test player two bots win about 80% of four-player games; all-bot four-player games last about 16–19 rounds.
 - **Pacing.** About a second per bot move so people can follow; `BOT_PACE` speeds it up for tests.
 - **Found on the way.** Leaving a game mid-animation threw errors from card flights still in the air (fixed). Headless Edge keeps a page's live stream open after navigating to a blank page, so the browser test leaves through the Home button.
+
+## 13. The starting roll stays up
+
+Plan: [`work/007-starting-roll-hold.md`](work/007-starting-roll-hold.md).
+
+- **Who rolled what.** The starting-roll card used to vanish the moment the last player rolled, before anyone saw that roll. Now it stays 3 seconds ("Seat 2 goes first!"), then fades; the first player can already place or roll underneath it. A tie stays up 3 seconds too ("Tie at 8!") before the tied players get their dice back.
