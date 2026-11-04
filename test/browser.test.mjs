@@ -423,3 +423,24 @@ test('browser: the host seats bots who play their own turns, and a bot stands in
     assert.ok(!await host.has('[data-takeover]'));for(const page of pages)assert.deepEqual(page.errors,[],'no uncaught page errors');
   }finally{for(const page of pages)await page.close().catch(()=>{});await browser?.close();await server.stop();}
 });
+
+test('browser: the host removes a friend from the lobby and makes the table private',{skip,timeout:90000},async()=>{
+  const server=await startServer(),browser=await launch();let host,guest;
+  try{
+    host=await browser.newPage();guest=await browser.newPage();
+    await createTable(host,server.host,'Ana','base','variable');const room=await host.eval(`document.querySelector('.place-code').value`);
+    assert.match(await host.text('.lobby-top .eyebrow'),/PUBLIC TABLE/);
+    await joinByInvite(guest,`${server.invite}/?room=${room}`,'Bo');await host.waitFor(`document.querySelector('[data-kick="1"]')`);
+    assert.equal(await guest.has('[data-kick]'),false,'only the host can remove people');assert.equal(await host.has('[data-kick="0"]'),false,'the host cannot remove themselves');
+    await guest.click('[data-command="ready"]');await host.waitFor(`document.querySelectorAll('.lobby-seat.is-ready').length===1`);
+    // Visibility leaves everyone ready.
+    await host.select('[data-setting="public"]','false');await host.waitFor(`document.querySelector('[data-ui="settings"]').dataset.public==='false'`);
+    assert.match(await host.text('.lobby-top .eyebrow'),/PRIVATE TABLE/);await guest.waitFor(`document.querySelector('[data-value="public"]')?.textContent.includes('Private')`);
+    assert.ok(await guest.has('.lobby-seat.is-ready'),'still ready');
+    await host.click('[data-kick="1"]');
+    await guest.waitFor(`document.querySelector('#entry')`,{message:'The removed friend did not go home'});await toastIncludes(guest,'removed you');
+    assert.equal(await guest.eval(`Object.keys(JSON.parse(localStorage.getItem('island-seats')||'{}')).includes(${JSON.stringify(room)})`),false,'the seat is forgotten');
+    await host.waitFor(`document.querySelectorAll('.lobby-seat:not(.empty)').length===1`);
+    assert.deepEqual([...host.errors,...guest.errors],[]);
+  }finally{await host?.close().catch(()=>{});await guest?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
