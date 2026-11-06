@@ -27,7 +27,25 @@ test('a bot accepts a trade that brings a card it needs and declines one that co
   s=apply(g,a,{type:'offer',give:{...emptyHand(),wood:1},want:{...emptyHand(),ore:1},offerId:'bad'},always);
   assert.deepEqual(decide(view(s,b),always),{type:'declineOffer',offerId:'bad'});
 });
-test('a bot confirms with whoever accepted its offer, and gives up once everyone declined or after a while',()=>{
+test('a bot hears every player out before it chooses, for at most 20 s',()=>{
+  const {g}=play({count:4,seed:9,players:Array(4).fill(bot),until:g=>g.phase==='action'&&g.role===1}),a=g.active,[b,c,d]=[1,2,3].map(n=>(a+n)%4),base=()=>{const s=structuredClone(g);s.offers=[];setHand(s,a,{wood:1});return apply(s,a,{type:'offer',offerId:'x',give:{...emptyHand(),wood:1},want:{...emptyHand(),ore:1}},rng());},always=n=>n-1;
+  const answer=(s,p,type)=>{setHand(s,p,{ore:1});return apply(s,p,{type,offerId:'x'},rng());},counter=(s,p)=>{setHand(s,p,{...s.players[p].hand,wheat:1});return apply(s,p,{type:'offer',offerId:'cx',counterTo:'x',give:{...emptyHand(),wheat:1},want:{...emptyHand(),wood:1}},rng());};
+  // An early accept waits for the others, and a later acceptor with a lower score wins.
+  let s=answer(base(),b,'acceptOffer');assert.ok(decide(view(s,a),rng(),{offerAge:3000}).wait>0,'one player accepted, two are silent');
+  s=answer(s,c,'declineOffer');assert.ok(decide(view(s,a),rng(),{offerAge:3000}).wait>0,'one player is still silent');
+  assert.deepEqual(decide(view(s,a),rng(),{offerAge:25000}),{type:'confirmOffer',offerId:'x',player:b},'a silent player does not hold the table up past 20 s');
+  const low=view(answer(s,d,'acceptOffer'),a);low.players[b].score=5;low.players[d].score=1;assert.deepEqual(decide(low,rng(),{offerAge:3000}),{type:'confirmOffer',offerId:'x',player:d},'everyone answered: the lower score');
+  // A counter is an answer, and it waits its turn: accepting it would end the trade too.
+  s=counter(base(),b);assert.ok(decide(view(s,a),rng(),{offerAge:3000}).wait>0,'a counter with two players silent');
+  s=answer(answer(s,c,'declineOffer'),d,'declineOffer');let v=view(s,a);assert.ok(['acceptOffer','declineOffer'].includes(decide(v,rng(),{offerAge:3000}).type)&&decide(v,rng(),{offerAge:3000}).offerId==='cx','everyone answered: the counter is settled');
+  const accepted=view(answer(s,c,'acceptOffer'),a);assert.deepEqual(decide(accepted,rng(),{offerAge:3000}),{type:'confirmOffer',offerId:'x',player:c},'its own terms come before a counter');
+  s=apply(s,a,{type:'declineOffer',offerId:'cx'},rng());assert.deepEqual(decide(view(s,a),rng(),{offerAge:3000}),{type:'cancelOffer',offerId:'x'},'a declined counter still counts as an answer');
+  // A counter the player took back is no answer; they may yet accept.
+  s=answer(answer(counter(base(),b),c,'declineOffer'),d,'declineOffer');s=apply(s,b,{type:'cancelOffer',offerId:'cx'},rng());assert.ok(decide(view(s,a),rng(),{offerAge:3000}).wait>0,'a withdrawn counter');
+  // Without an open offer of its own there is nothing to wait for.
+  s=answer(counter(base(),b),c,'declineOffer');s=apply(s,a,{type:'cancelOffer',offerId:'x'},rng());assert.ok(['acceptOffer','declineOffer'].includes(decide(view(s,a),always,{offerAge:0}).type),'guard: a lone counter is answered at once');
+});
+test('a bot confirms with whoever accepted its offer once everyone answered, and gives up once everyone declined or after a while',()=>{
   const {g}=play({count:3,seed:9,players:Array(3).fill(bot),until:g=>g.phase==='action'&&g.role===1});const a=g.active,[b,c]=[(a+1)%3,(a+2)%3],o=(accepted,declined)=>({...structuredClone(g),offers:[{id:'x',from:a,to:null,give:{...emptyHand(),wood:1},want:{...emptyHand(),ore:1},accepted,declined}]});
   assert.deepEqual(decide(view(o([b],[c]),a),rng()),{type:'confirmOffer',offerId:'x',player:b});
   assert.deepEqual(decide(view(o([],[b,c]),a),rng()),{type:'cancelOffer',offerId:'x'});
