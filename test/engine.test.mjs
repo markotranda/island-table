@@ -41,6 +41,15 @@ test('seven requires exact discards before moving robber and hides stolen identi
   for(let i=0;i<g.count;i++)if(g.discards[i]){let left=g.discards[i],b=emptyHand();for(const r of R){b[r]=Math.min(g.players[i].hand[r],left);left-=b[r];}g=action(g,i,{type:'discard',resources:b});}
   assert.equal(g.phase,'robber');assert.throws(()=>action(g,p,{type:'robber',hex:g.robber}),/different/);const target=g.board.hexes.find(h=>h.id!==g.robber&&h.vertices.some(v=>{const owner=g.board.vertices[v].building?.owner;return owner>=0&&owner!==p;}));g=action(g,p,{type:'robber',hex:target.id});if(g.phase==='steal')g=action(g,p,{type:'steal',player:g.victims[0]});assert.equal(g.phase,'action');conserved(g);
 });
+test('an offer leaves the table once every other player has declined it, and only then',()=>{
+  const start=count=>{const g=clear(fixture(count));give(g,0,'wood',1);give(g,1,'ore',1);return action(g,0,{type:'offer',offerId:'o1',give:{wood:1},want:{ore:1}});},ids=g=>g.offers.map(o=>o.id),all=(g,ps)=>ps.reduce((g,p)=>action(g,p,{type:'declineOffer',offerId:'o1'}),g);
+  for(const count of [2,4,5,6]){const others=Array.from({length:count-1},(_,i)=>i+1);let g=all(start(count),others.slice(0,-1));if(count>2)assert.deepEqual(ids(g),['o1'],'one answer short: still open');g=all(g,others.slice(-1));assert.deepEqual(ids(g),[],`${count} players: the last decline removes it`);assert.deepEqual(pending(g),[0]);const e=g.events.at(-1);assert.deepEqual([e.kind,e.p,e.from,e.declined],['cancel',0,0,true]);}
+  // Accepting holds it open; withdrawing that acceptance can be the last decline.
+  let g=all(start(4),[2,3]);g=action(g,1,{type:'acceptOffer',offerId:'o1'});assert.deepEqual(ids(g),['o1'],'someone is still willing');g=action(g,1,{type:'declineOffer',offerId:'o1'});assert.deepEqual(ids(g),[]);
+  // A counter isn't a decline, and it outlives the offer it answered.
+  g=start(4);give(g,3,'ore',1);g=action(g,3,{type:'offer',offerId:'c1',counterTo:'o1',give:{ore:1},want:{wood:1}});g=all(g,[1,2]);assert.deepEqual(ids(g),['o1','c1'],'the player who countered has not declined');
+  g=action(g,3,{type:'declineOffer',offerId:'o1'});assert.deepEqual(ids(g),['c1'],'the counter stays');g=action(g,0,{type:'acceptOffer',offerId:'c1'});assert.equal(g.players[0].hand.ore,1);assert.equal(g.offers.length,0);conserved(g);
+});
 test('domestic trades reject gifts and same resources, exchange atomically, and clear offers',()=>{
   let g=clear(fixture());give(g,0,'wood',2);give(g,1,'ore',1);give(g,2,'ore',1);assert.throws(()=>action(g,0,{type:'offer',give:{wood:1},want:{}}),/gifts/);assert.throws(()=>action(g,0,{type:'offer',give:{wood:2},want:{wood:1}}),/different/);
   g=action(g,0,{type:'offer',offerId:'trade001',give:{wood:2},want:{ore:1}});g=action(g,1,{type:'acceptOffer',offerId:'trade001'});assert.equal(g.players[1].hand.wood,0,'accepting only marks willingness');

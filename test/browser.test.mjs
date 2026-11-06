@@ -515,6 +515,11 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await B.waitFor(`[...document.querySelectorAll('.resource-card b')].map(b=>b.textContent).join()==='1,1,2,0,0'`,{message:'Confirmed trade did not update the other hand'});
     await C.waitFor(`document.querySelector('.log-list').textContent.includes('Seat ${a} traded with Seat ${b}')`);
     await openPanel(A,'trade','trade');await fill(A,'trade',{'want-ore':1});await submit(A,'trade');await toastIncludes(A,'gifts are not allowed');
+    // Everyone declining at the same moment takes the offer off every table; nobody has to cancel it.
+    await fill(A,'trade',{'give-wood':1,'want-ore':1});await submit(A,'trade');for(const page of [B,C])await page.waitFor(`document.querySelector('.offer [data-decline]')`,{message:'The offer did not reach the other players'});
+    await Promise.all([B,C].map(page=>page.eval(`document.querySelector('.offer [data-decline]').click()`)));
+    for(const page of [A,B,C])await page.waitFor(`!document.querySelector('.offer')&&document.querySelector('.log-list').textContent.includes('Everyone declined Seat ${a}’s offer.')`,{message:'The declined offer did not leave the table'});
+    for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);assert.ok(await A.has('[data-ui="trade-launcher"]')&&!await A.has('[data-ui="trade-panel"]'),'the panel closes with its last offer');
     // The mute toggle is remembered per browser and survives a reload.
     await A.click('[data-ui="mute"]');await A.waitFor(`document.querySelector('[data-ui="mute"]').getAttribute('aria-pressed')==='false'&&localStorage.getItem('island-muted')==='1'`,{message:'Mute did not switch sound off'});
     await A.eval('location.reload()');await A.waitFor(`document.querySelector('[data-ui="mute"]')?.getAttribute('aria-pressed')==='false'`,{message:'Mute was not remembered'});

@@ -271,7 +271,7 @@ function story(e){if(e.text)return escape(e.text);const P=i=>i===null||i===undef
     case 'invention':return `${who} took ${resList(e.res)} from the supply.`;
     case 'offer':return `${who} ${e.counter?'countered with':'offered'} ${resList(e.give)} for ${resList(e.want)}.`;
     case 'respond':return `${who} ${e.answer==='accept'?'accepted':e.answer==='withdraw'?'withdrew from':'declined'} ${P(e.from)}’s offer.`;
-    case 'cancel':return e.p===e.from?`${who} withdrew an offer.`:`${who} removed ${P(e.from)}’s offer.`;
+    case 'cancel':return e.declined?`Everyone declined ${who}’s offer.`:e.p===e.from?`${who} withdrew an offer.`:`${who} removed ${P(e.from)}’s offer.`;
     case 'trade':return `${who} traded with ${P(e.with)}: gave ${resList(e.give)}, got ${resList(e.want)}.`;
     case 'bank':return `${who} traded ${resList(e.give)} with the supply for ${resList(e.want)}.`;
     case 'award':return e.p===null?`${P(e.from)} lost ${AWARD[e.award]}.`:`${who} took ${AWARD[e.award]}${e.from!==null?` from ${P(e.from)}`:''}.`;
