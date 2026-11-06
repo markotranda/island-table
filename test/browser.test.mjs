@@ -45,7 +45,7 @@ async function rollForStart(pages){
     let open=false;for(const page of pages){if(await page.has('[data-ui="order"]'))open=true;await saw(page);}
     if(!open||held.size===pages.length){for(const page of pages)await saw(page);await Promise.all(pages.map(page=>page.eval('window.__heldWatch?.disconnect()')));return held;}await pause(150);
   }
-  throw new Error('The starting roll did not finish');
+  throw new Error(`The starting roll did not finish: ${JSON.stringify(await Promise.all(pages.map(page=>page.eval(`({dice:!!document.querySelector('[data-command="firstRoll"]'),order:!!document.querySelector('[data-ui="order"]'),offline:!!document.querySelector('.connection.offline'),toast:document.querySelector('#toast')?.textContent,text:document.querySelector('[data-ui="order"]')?.textContent.slice(0,120)})`).catch(e=>e.message))))}`);
 }
 // Plays every setup placement by clicking the first highlighted target on whichever page has one.
 async function playSetup(pages){
@@ -215,11 +215,11 @@ test('browser: six player cards always fit without scrolling and never change si
 test('browser: End turn glows when nothing is left to do but trade with players, and more after a while',{skip,timeout:120000},async()=>{
   const server=await startServer(),browser=await launch();let host;
   try{
-    // Short thresholds (soft, strong) instead of 3 s and 30 s; every staged reload keeps them.
-    host=await sixSeats(browser,server);await host.init('window.__nudgeMs=[300,900];window.__sounds=[];');
+    // Short thresholds (soft, strong) instead of 3 s and 30 s; every staged reload keeps them. The soft stage is over in 600 ms, too brief to catch by polling on a slow machine, so the page records each level the button shows.
+    host=await sixSeats(browser,server);await host.init(`window.__nudgeMs=[300,900];window.__sounds=[];window.__glow=[];new MutationObserver(()=>{const n=document.querySelector('[data-command="end"]')?.dataset.nudge;if(n&&window.__glow.at(-1)!==n)window.__glow.push(n);}).observe(document,{subtree:true,childList:true,attributes:true});`);
     const nudge=()=>host.eval(`document.querySelector('[data-command="end"]')?.dataset.nudge??'none'`);
-    const glows=async(fn,why)=>{await stage(server,[host],g=>{hostTurn(g);fn(g);});await host.waitFor(`document.querySelector('[data-command="end"]')?.dataset.nudge==='soft'`,{message:`soft glow: ${why}`});
-      await host.waitFor(`document.querySelector('[data-command="end"]')?.dataset.nudge==='strong'`,{message:`strong glow: ${why}`});};
+    const glows=async(fn,why)=>{await stage(server,[host],g=>{hostTurn(g);fn(g);});await host.waitFor(`document.querySelector('[data-command="end"]')?.dataset.nudge==='strong'`,{message:`strong glow: ${why}`});
+      assert.deepEqual(await host.eval('window.__glow'),['soft','strong'],`soft glow first: ${why}`);};
     const quiet=async(fn,why)=>{await stage(server,[host],g=>{hostTurn(g);fn(g);});await host.waitFor(`document.querySelector('[data-command="end"]')`);await pause(1300);assert.equal(await nudge(),'none',why);};
     // The host has no pieces on the board yet (staged from the starting roll), so the development card is the only thing to buy.
     const give=(g,h)=>{for(const r of R){g.bank[r]+=g.players[0].hand[r];g.players[0].hand[r]=0;}for(const [r,n] of Object.entries(h)){g.bank[r]-=n;g.players[0].hand[r]=n;}};

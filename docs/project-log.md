@@ -413,3 +413,7 @@ Plan: [`work/015-trade-answers.md`](work/015-trade-answers.md), reviewed by a se
 
 - **Declined offers go away.** Once every other player has declined an offer, it leaves the table and the history says so. Nobody has to cancel it by hand. A counter isn't a decline, and counters stay.
 - **Bots hear everyone out.** A bot used to trade with the first player who accepted, so other bots usually beat people to it. Now it waits until everyone has answered, or 20 seconds at most, then trades with the lowest score among those who accepted.
+
+## 21. A test that blinked
+
+One browser test sometimes failed on slow machines while the game was behaving correctly. It looked for the End turn glow's soft stage by checking repeatedly, and that stage is very brief in the test, so a slow check could miss it. The page now records each stage as it appears. Another test failed once with an unfinished starting roll and hasn't failed since, so its error message now reports what each player's screen showed.
