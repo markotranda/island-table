@@ -6,7 +6,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Status | Next step |
 |---|---|---|---|
-| 015 | [Declined offers leave the table, bots hear everyone out](015-trade-answers.md) | in review | Finish the plan review, then step 1 |
+| 016 | [Two browser tests are flaky under THROTTLE=6](016-throttled-glow-flake.md) | planned | Reproduce, find why the End turn glow is missed |
 | 005 | [Checks that tests could not do](005-unverified-checks.md) | waiting on owner | Owner: sounds, phone, steal tooltip, human-vs-bots game. Claude: screenshots at 1280×720, extended board, phone |
 | 006 | [Tooltips left out in round 2](006-tooltip-gaps.md) | questions | Ask the owner whether player-card and robber tips are still wanted |
 
@@ -14,6 +14,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Finished |
 |---|---|---|
+| 015 | [Declined offers leave the table, bots hear everyone out](015-trade-answers.md) | 2026-11-06 |
 | 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | 2026-11-04 |
 | 011 | [Starting-roll test can miss the 3 s hold under load](011-starting-roll-test-flake.md) | 2026-11-04 |
 | 014 | [Noticing your turn, and remembering to end it](014-turn-reminders.md) | 2026-11-04 |

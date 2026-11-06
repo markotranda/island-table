@@ -1,6 +1,6 @@
 # 015: Declined offers leave the table, bots hear everyone out
 
-**Status:** in review · **Commits:** see `git log -- docs/work/015-trade-answers.md`
+**Status:** done · **Commits:** see `git log -- docs/work/015-trade-answers.md`
 
 ## Feedback
 2026-11-06, owner:
@@ -74,11 +74,19 @@ Round 1 (fresh agent, reading only), verdict APPROVE, no blocking findings:
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
+| 1 | done | `56a5b6f` | Engine, history line, RULES, engine and browser tests |
+| 2 | done | `4b6a24d` | `decide()` and tests |
+| 3 | done | see `git log` | Docs and close |
+
+Log, 2026-11-06:
+- The engine test and the "hears every player out" test both failed without their change, then passed with it. The other listed cases are guards.
+- `bot-stats` before and after: bots beat scripted players 23 of 30 before, 24 of 30 after; median game lengths are similar (6 bots 135 → 124 turns, 4 bots 74 → 72, the rest within 1). No strength bound changed.
+- In-app How to play is unchanged: its trading text is still accurate.
+- `npm test`: 67 of 67. A full `THROTTLE=6` run: 65 of 67. The two failures are tracked in [016](016-throttled-glow-flake.md). One of them also fails on the commit before this work; the other could not be reproduced in isolation on either commit.
 
 ## Not verified
+- A real game with people and bots: how the wait of up to 20 s feels when a person doesn't answer. The owner's human-vs-bots check is in [005](005-unverified-checks.md).
+- Two-player and 6-player declines in a browser (engine tests cover the count).
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. Finish the review, then do the steps in order; the Progress table says which is next.
+Nothing left. The throttled test failures continue in [016](016-throttled-glow-flake.md).

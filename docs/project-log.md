@@ -406,3 +406,10 @@ Players said they missed that it was their turn, and forgot to end it.
 ## 19. Steadier browser tests
 
 Three browser tests failed now and then for reasons that had nothing to do with the game. Two of them read the screen right after a reload, before the live connection was back, so anything that depends on who is online wasn't drawn yet. The test helper that sets up a situation now waits for that connection. Adding five bots could lose a click while the lobby redrew, so the test now clicks again when a bot doesn't appear. The starting-roll test could miss the 3-second "goes first" moment when the machine was busy, so each page now notes that moment itself instead of the test checking it from outside.
+
+## 20. Answers before choices
+
+Plan: [`work/015-trade-answers.md`](work/015-trade-answers.md), reviewed by a second agent.
+
+- **Declined offers go away.** Once every other player has declined an offer, it leaves the table and the history says so. Nobody has to cancel it by hand. A counter isn't a decline, and counters stay.
+- **Bots hear everyone out.** A bot used to trade with the first player who accepted, so other bots usually beat people to it. Now it waits until everyone has answered, or 20 seconds at most, then trades with the lowest score among those who accepted.

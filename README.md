@@ -14,7 +14,7 @@ A private 2-6 player browser game following the 2025 rules of a classic island-t
 - **A history that says who got what.** Every roll, gain, theft, card, trade and build is written down with resource icons. Only the people involved see which card was stolen or bought.
 - **Sound everywhere.** Dice rattle, cards pop as they land, wooden knocks for building, coins for trades, a chime when your turn starts and a fanfare for the winner. All synthesized in the browser; mute it from the header.
 - **Your turn, unmissed.** A band in your colour crosses the board when your turn starts (a quieter one for everyone else's), the tab title flags your move, an opt-in notification reaches a background tab, and End turn glows softly once nothing is left to do but trade with players.
-- **Bots fill the table.** The host can seat bots in the lobby (they get ordinary names marked "(Bot)") so two friends can play a full island. They roll, build, trade with you and answer your offers like an average player. If someone drops out, a bot plays their seat until they come back.
+- **Bots fill the table.** The host can seat bots in the lobby (they get ordinary names marked "(Bot)") so two friends can play a full island. They roll, build, trade with you and answer your offers like an average player, and when they offer a trade they hear everyone out, for up to 20 seconds, before choosing. If someone drops out, a bot plays their seat until they come back.
 - **A proper ending.** The winner gets a full-screen banner with confetti and the final scores, and the host can start a rematch.
 
 | | | |
@@ -80,7 +80,7 @@ Open http://localhost:3000. `PORT`, `HOST`, `DATA_DIR`, `PUBLIC_ORIGIN`, and `LO
 
 - The server validates all moves and supplies dice, shuffles, and random thefts.
 - Tap the glowing dice to roll. Build from the bar beside your hand, then click a highlighted edge or intersection; Esc cancels. **How to play** (the **?** at the top right during a game) explains the rules.
-- On your turn, open **Trade → Players** to offer a trade to everyone, or **Supply** for 4:1 and port trades. Other players accept, decline or **Counter**; you confirm with one of the players who accepted. Close the trade panel to hide offers until a new one arrives.
+- On your turn, open **Trade → Players** to offer a trade to everyone, or **Supply** for 4:1 and port trades. Other players accept, decline or **Counter**; you confirm with one of the players who accepted. An offer everyone declined disappears by itself. Close the trade panel to hide offers until a new one arrives.
 - When only one player can be robbed, the robber steals from them at once.
 - Only you receive your private cards. Your own score includes hidden Victory Point cards; other players see your public score until the game ends.
 - Refreshing or reconnecting restores your saved seat and the current phase.
