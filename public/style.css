@@ -216,7 +216,7 @@
 .log-res{white-space:nowrap;font-style:normal;font-weight:650}
 .log-res .ico{margin-left:1px;vertical-align:-.3em}
 .offer-actions{flex-wrap:wrap}
-.offer-answers{margin:6px 0 0}
+.offer-answers{margin:6px 0 0;min-height:1lh}
 .log-item .who{color:#2a2119;white-space:nowrap}.log-item .who i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--player);border:1px solid #2a211966;margin:0 3px 1px 0}
 /* Bigger number tokens with their dots on a row of their own. */
 .number-text{font-size:23px}

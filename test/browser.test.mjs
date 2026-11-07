@@ -122,8 +122,7 @@ async function stage(server,pages,fn){
 // turn (hostTurn) so the bots stay idle. The host's name is as long as names get.
 async function sixSeats(browser,server,size={width:1280,height:720}){
   const host=await browser.newPage(size);await createTable(host,server.host,'Bartholomew Longfellow J','extended','variable');
-  // A live update can redraw the lobby between press and release and swallow a click, so add again if the bot never came.
-  for(let n=1;n<=5;n++)for(let tries=0;;tries++){if(await host.eval(`document.querySelectorAll('[data-bot]').length`)<n)await host.click('[data-command="addBot"]');try{await host.waitFor(`document.querySelectorAll('[data-bot]').length>=${n}`,{timeout:10000});break;}catch(e){if(tries>=2)throw e;}}
+  for(let n=1;n<=5;n++){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('[data-bot]').length>=${n}`);}
   await host.click('[data-command="ready"]');await host.waitFor(`!document.querySelector('[data-command="start"]').disabled`);await host.click('[data-command="start"]');await host.waitFor(`document.querySelector('svg.board')`);
   return host;
 }
@@ -499,8 +498,7 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await B.click('[data-ui="trade-close"]');await B.waitFor(`!document.querySelector('.offer')`);assert.match(await B.text('[data-ui="trade-launcher"]'),/Offers\s*1/);
     await B.click('[data-ui="trade-show"]');await B.waitFor(`document.querySelector('.offer [data-accept]')`);
     await C.click('.offer [data-counter]');await fill(C,'trade',{'give-wool':1,'want-wood':1});
-    // Answer through the app's own handlers in the same instant: a mouse click can miss when the other answer arrives and shifts the layout mid-click.
-    await Promise.all([B.eval(`document.querySelector('.offer [data-accept]').click()`),C.eval(`document.getElementById('trade').requestSubmit()`)]);
+    await Promise.all([B.click('.offer [data-accept]'),C.eval(`document.getElementById('trade').requestSubmit()`)]);
     for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);
     await A.waitFor(`document.querySelector('.offer [data-confirm]')&&document.querySelectorAll('.offer').length===2`,{message:'The accept and the counteroffer did not both reach the active player'});
     // Answers redraw the panel live; it must not replay its entrance each time (it used to blink).
@@ -670,8 +668,9 @@ test('browser: the host removes a friend from the lobby and makes the table priv
     await host.select('[data-setting="public"]','false');await host.waitFor(`document.querySelector('[data-ui="settings"]').dataset.public==='false'`);
     assert.match(await host.text('.lobby-top .eyebrow'),/PRIVATE TABLE/);await guest.waitFor(`document.querySelector('[data-value="public"]')?.textContent.includes('Private')`);
     assert.ok(await guest.has('.lobby-seat.is-ready'),'still ready');
-    await host.click('[data-kick="1"]');
-    await guest.waitFor(`document.querySelector('#entry')`,{message:'The removed friend did not go home'});await toastIncludes(guest,'removed you');
+    // Kicked with a button held down: home at once, and letting go does nothing on the table that is gone.
+    await guest.press('[data-command="ready"]');await host.click('[data-kick="1"]');
+    await guest.waitFor(`document.querySelector('#entry')`,{message:'The removed friend did not go home'});await toastIncludes(guest,'removed you');await guest.release();
     assert.equal(await guest.eval(`Object.keys(JSON.parse(localStorage.getItem('island-seats')||'{}')).includes(${JSON.stringify(room)})`),false,'the seat is forgotten');
     await host.waitFor(`document.querySelectorAll('.lobby-seat:not(.empty)').length===1`);
     assert.deepEqual([...host.errors,...guest.errors],[]);
@@ -729,6 +728,33 @@ test('browser: choosing a colour in the lobby: free, from a bot, or by asking a 
     await guest.waitFor(`document.querySelector('${swatch(white)}')?.dataset.state==='free'`);await guest.click(swatch(white));await everywhere(1,white);assert.equal(await guest.eval(`document.querySelector('[data-seat="1"]').classList.contains('is-ready')`),true,'changing colour keeps you ready');
     await host.waitFor(`!document.querySelector('[data-command="start"]')?.disabled`);await host.click('[data-command="start"]');for(const p of pages)await p.waitFor(`document.querySelector('svg.board')`);
     assert.deepEqual(await guest.eval(`[...document.querySelectorAll('.player')].map(e=>e.style.getPropertyValue('--player'))`),[blue,white,green,orange],'the chosen colours are the game colours');
+    assert.deepEqual(pages.flatMap(p=>p.errors),[]);
+  }finally{for(const p of pages)await p.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+
+test('browser: a live update between press and release does not swallow the click',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[];
+  try{
+    pages=await seatTable(browser,server,3,'fixed',false);const [A,B,C]=pages,corner={x:1,y:1},pause=ms=>new Promise(r=>setTimeout(r,ms));
+    await stage(server,pages,(g,{setHand})=>{hostTurn(g);setHand(0,{wood:4});setHand(1,{brick:2});setHand(2,{brick:2});});
+    const post=async()=>{await openPanel(A,'trade','trade');await fill(A,'trade',{'give-wood':1,'want-brick':1});await submit(A,'trade');for(const page of [B,C])await page.waitFor(`document.querySelector('.offer [data-accept]')`,{message:'The offer did not reach the other players'});};
+    const offer=(page,text,message)=>page.waitFor(`${text}.test(document.querySelector('.offer')?.textContent)`,{message});
+    const place=page=>page.eval(`(()=>{const r=document.querySelector('.offer-actions').getBoundingClientRect();return [r.x,r.y];})()`);
+    await post();
+    // B has the button down when C's answer arrives, and the click still counts.
+    await B.press('.offer [data-accept]');await C.eval(`document.querySelector('.offer [data-accept]').click()`);await offer(A,'/Accepted: Seat 2/','C did not get through');await pause(300);await B.release();
+    const both='/Accepted: Seat (1, Seat 2|2, Seat 1)/';await offer(A,both,'B held Accept through the update and let go, and the accept was lost');await offer(B,both,'the update held back during the press never drew');
+    await A.click('[data-cancel]');await B.waitFor(`!document.querySelector('.offer')`);
+    // Letting go elsewhere is no click, and the update held back still draws.
+    await post();await B.waitFor(`!document.querySelector('[data-ui="trade-panel"]').getAnimations({subtree:true}).length`,{message:'the panel kept animating'});const before=await place(B);await B.press('.offer [data-accept]');await C.click('.offer [data-decline]');await offer(A,'/Declined: Seat 2/','C did not get through');await pause(100);await B.release(corner);
+    await offer(B,'/Declined: Seat 2/','the update did not draw after a release elsewhere');assert.doesNotMatch(await A.text('.offer'),/Accepted/,'a release elsewhere is not an accept');
+    // Someone else's answer leaves your buttons where they were (measured on their row: a hovered button lifts by a pixel).
+    assert.deepEqual(await place(B),before,'the first answer moved the Accept button');
+    // A press never let go holds the table back only briefly.
+    await B.press('.offer [data-accept]');await A.click('[data-cancel]');await B.waitFor(`!document.querySelector('.offer')`,{timeout:5000,message:'a stuck press kept the update from drawing'});await B.release(corner);
+    // On touch the click comes after pointerup: it must still land on what the finger pressed, not on what a redraw put there.
+    await post();await B.press('.offer [data-accept]',{touch:true});await A.eval(`document.querySelector('[data-cancel]').click()`);await A.waitFor(`!document.querySelector('.offer')`,{message:'A could not cancel'});await B.release();
+    await toastIncludes(B,'cannot answer');await B.waitFor(`!document.querySelector('.offer')`,{message:'the update did not draw after the tap'});
     assert.deepEqual(pages.flatMap(p=>p.errors),[]);
   }finally{for(const p of pages)await p.close().catch(()=>{});await browser?.close();await server.stop();}
 });
