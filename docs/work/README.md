@@ -6,7 +6,6 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Status | Next step |
 |---|---|---|---|
-| 017 | [A live update swallows a click in progress](017-press-during-update.md) | in progress | Step 3: docs and close |
 | 016 | [Two browser tests are flaky under THROTTLE=6](016-throttled-glow-flake.md) | parked | Glow test fixed. Starting-roll failure not reproduced: read the new error detail if it recurs |
 | 005 | [Checks that tests could not do](005-unverified-checks.md) | waiting on owner | Owner: sounds, phone, steal tooltip, human-vs-bots game. Claude: screenshots at 1280×720, extended board, phone |
 | 006 | [Tooltips left out in round 2](006-tooltip-gaps.md) | questions | Ask the owner whether player-card and robber tips are still wanted |
@@ -15,6 +14,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Finished |
 |---|---|---|
+| 017 | [A live update swallows a click in progress](017-press-during-update.md) | 2026-11-07 |
 | 015 | [Declined offers leave the table, bots hear everyone out](015-trade-answers.md) | 2026-11-06 |
 | 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | 2026-11-04 |
 | 011 | [Starting-roll test can miss the 3 s hold under load](011-starting-roll-test-flake.md) | 2026-11-04 |

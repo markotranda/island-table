@@ -1,6 +1,6 @@
 # 017: A live update swallows a click in progress
 
-**Status:** in progress · **Commits:** see `git log -- docs/work/017-press-during-update.md`
+**Status:** done · **Commits:** see `git log -- docs/work/017-press-during-update.md`
 
 ## Feedback
 2026-11-07, owner:
@@ -83,7 +83,12 @@ Both earlier rejections were agreed with. The reviewer asked for no third round 
 |---|---|---|---|
 | 1 | done | `3df612b` | Hold, answers below the buttons, tests. Touch step stable 6 of 6 under `THROTTLE=6` |
 | 2 | done | see `git log` | Decision 5 |
-| 3 | | | |
+| 3 | done | see `git log` | Docs, close |
+
+Log, 2026-11-07:
+- The reproduction failed before the fix and passes after; the button-row check fails against the old markup.
+- The touch check passes with the touch wait removed: Chromium hit-tests touch clicks afresh, and the click/timer order is a race. It stays as a guard.
+- `npm test` 68 of 68. Full `THROTTLE=6 npm test` 68 of 68 (the earlier run failed in `sixSeats`, which led to decision 5).
 
 ## Not verified
 - A real phone. Touch was driven by Chromium's emulation only, and its check is a guard (see Review). iOS and Android are unverified.
@@ -91,4 +96,4 @@ Both earlier rejections were agreed with. The reviewer asked for no third round 
 - Board controls (`data-edge`, `data-vertex`, `data-hex`) spanning an update: same code path as buttons, no test of their own.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. Steps 1 and 2 are committed; step 3 (docs, `THROTTLE=6 npm test`, close) is next.
+Nothing left. The owner can check a real phone and a real game with friends under item [005](005-unverified-checks.md).

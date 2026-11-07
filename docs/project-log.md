@@ -417,3 +417,13 @@ Plan: [`work/015-trade-answers.md`](work/015-trade-answers.md), reviewed by a se
 ## 21. A test that blinked
 
 One browser test sometimes failed on slow machines while the game was behaving correctly. It looked for the End turn glow's soft stage by checking repeatedly, and that stage is very brief in the test, so a slow check could miss it. The page now records each stage as it appears. Another test failed once with an unfinished starting roll and hasn't failed since, so its error message now reports what each player's screen showed.
+
+## 22. Clicks that went nowhere
+
+Plan: [`work/017-press-during-update.md`](work/017-press-during-update.md), reviewed by a second agent over two rounds.
+
+- **The report:** pressing Accept at the same moment as another player sometimes did nothing. Every live update redraws the page, and a button replaced between pressing and letting go never receives its click. Another player's answer is exactly such an update. Now the screen waits for the press to finish before redrawing, so the click lands and is sent with the newest state.
+- **Buttons stay put:** the "Accepted: …" line used to appear above an offer's buttons and push them down a line just as you aimed. It now sits below them, on a line kept free from the start.
+- **A second lost click:** clicking the same kind of button again while the first was still on its way, say adding a second bot, was taken for a double click and dropped, even when the screen had already shown the first result. Only a true double click is dropped now.
+- Two tests had quietly worked around both problems. The workarounds are gone, and the new tests fail without the fixes.
+

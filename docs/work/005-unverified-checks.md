@@ -29,3 +29,6 @@ Ask the owner about 1, 4, 6 and 7 (any of their findings become new feedback via
 ## From item 014 (2026-11-04)
 - Turn alerts: over localhost or HTTPS, turn on the bell, switch tabs, and check the notification appears when your turn starts and clicking it brings you back.
 - Listen to the End turn reminder tone (after 30 s with nothing left to do) and judge whether the soft glow is noticeable but not annoying.
+
+### From 017 (2026-11-07)
+- Owner: on a real phone, tap Accept while another player answers the same offer. The tap should count, and the buttons should not jump while the panel fills up.

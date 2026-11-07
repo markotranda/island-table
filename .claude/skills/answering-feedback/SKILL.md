@@ -13,6 +13,7 @@ Continuing existing work? Open `docs/work/README.md`, pick the item, read its fi
 
 - Split the feedback into separate points and number them. Keep the owner's own words (quote them in the item).
 - For each point, find the current state **before** asking anything: read the code, `RULES.md`, the tests, earlier work items (`docs/work/`, `git log`); reproduce it if it is a bug (tests, the dev server, `node scripts/review-screens.mjs <dir>` for screenshots). Do not ask what the repo can answer.
+- Search the tests for workarounds (retry loops, synthetic `.click()` instead of real input, comments like "can miss"): a test that dodges flaky behaviour is often hiding the very bug reported. Remove the workaround as part of the fix, so the tests prove it.
 - Record what you found: file:line references, what happens now, a screenshot if it helps.
 
 ## 2. Assess
