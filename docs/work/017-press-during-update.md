@@ -1,6 +1,6 @@
 # 017: A live update swallows a click in progress
 
-**Status:** in review · **Commits:** see `git log -- docs/work/017-press-during-update.md`
+**Status:** in progress · **Commits:** see `git log -- docs/work/017-press-during-update.md`
 
 ## Feedback
 2026-11-07, owner:
@@ -31,6 +31,7 @@
 | 1h | — | Only the primary button of an enabled control holds drawing | Other presses produce no click |
 | 2 | Accept is lost | "Accepted: …" moves below the buttons and always keeps its line (`min-height:1lh`), on the offers people can answer | Other players' answers no longer move the Accept, Decline and Counter buttons at desktop width, also on an offer further down the panel. A long line wraps below the buttons |
 | 3 | — | Not done: keyboard presses (Space held during an update); a person accepting two different offers within one request (`busy?.type===type` drops the second); a double-click whose second press spans an update now reaches the server (usually a refusal toast; `buyCard` could buy twice, `data-kick` sends a seat index). That last hazard already exists when the update lands before the second press. The current player's own "Trade with X" buttons sit before Cancel, so accepts move Cancel and a withdrawal can swap who a button trades with | None is this report. Noted in case they come up |
+| 5 | — | Found while implementing: `command()` dropped a click of the same type as the command in flight, meant for double clicks. When the live stream shows the result before the HTTP response returns, a real second click (another bot, a second offer's Accept) was dropped silently. Now a repeat is dropped only while the revision is the one the first was sent with; otherwise it queues | The `sixSeats` retry loop hid it; without that loop, 2 of 15 throttled runs failed with the click reaching the button and no request sent. After: 24 of 24. Cost: a double click split by an update sends twice, as in decision 3 |
 | 4 | — | A command queued behind one that sent the player home stops at `if(!state)return` | The same wedge as 1e by another route; one line |
 
 ## Plan
@@ -50,7 +51,8 @@ At the start of `render(preserve=false)`: `if(pressing!==null&&state){heldDraw=(
 
 ### Steps
 1. **Hold redraws during a press** (`app.js`, driver, new test, comments). `npm test`.
-2. **Docs and close.** `CLAUDE.md` (driver `press`/`release`, redraws wait for a press; the note that a center click can land elsewhere stays), `docs/project-log.md`, this item, index. `THROTTLE=6 npm test` first, output in the scratchpad. No `RULES.md` change: no rule or convention moves.
+2. **Drop only true double clicks** (decision 5). Evidence: the throttled `sixSeats` tests, which add five bots with plain clicks.
+3. **Docs and close.** `CLAUDE.md` (driver `press`/`release`, redraws wait for a press; the note that a center click can land elsewhere stays), `docs/project-log.md`, this item, index. `THROTTLE=6 npm test` first, output in the scratchpad. No `RULES.md` change: no rule or convention moves.
 
 ### Verification
 The new test fails without the change. `npm test`, `THROTTLE=6 npm test`.
@@ -79,8 +81,9 @@ Both earlier rejections were agreed with. The reviewer asked for no third round 
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
-| 1 | | | |
-| 2 | | | |
+| 1 | done | `3df612b` | Hold, answers below the buttons, tests. Touch step stable 6 of 6 under `THROTTLE=6` |
+| 2 | done | see `git log` | Decision 5 |
+| 3 | | | |
 
 ## Not verified
 - A real phone. Touch was driven by Chromium's emulation only, and its check is a guard (see Review). iOS and Android are unverified.
@@ -88,4 +91,4 @@ Both earlier rejections were agreed with. The reviewer asked for no third round 
 - Board controls (`data-edge`, `data-vertex`, `data-hex`) spanning an update: same code path as buttons, no test of their own.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file. Finish the review, then step 1.
+Read `CLAUDE.md`, then this file. Steps 1 and 2 are committed; step 3 (docs, `THROTTLE=6 npm test`, close) is next.

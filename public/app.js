@@ -108,9 +108,10 @@ const SPEAKER=on=>ui(on?'sound-on':'sound-off');
 // makes your own move wrong (the server still checks it), so all of your commands then retry.
 function retryContext(type){if(state.phase==='action'&&state.active===state.me&&type!=='settings')return `act:${state.turn}:${state.active}:${state.role}:${state.phase}`;if(type==='discard'&&state.phase==='discard')return `discard:${state.turn}:${state.discards[state.me]}`;if(type==='ready'&&state.phase==='lobby')return `ready:${state.players[state.me]?.ready}`;if(type==='settings'&&state.phase==='lobby')return 'settings';if(type==='colorCancel'&&state.phase==='lobby')return 'colorCancel';if(['color','colorAnswer'].includes(type)&&state.phase==='lobby')return `color:${state.players[state.me]?.color}`;if(type==='firstRoll'&&state.phase==='order')return `order:${state.order.round}:${state.order.done.includes(state.me)}`;if(['offer','acceptOffer','declineOffer'].includes(type)&&state.phase==='action')return `trade:${state.turn}:${state.active}:${state.role}`;return null;}
 async function command(type,extra={},retries=5){
-  // A repeat of the in-flight command (a double click) is dropped; a different one, such as a pick the live stream revealed before
-  // the response arrived, waits its turn so the click is not lost.
-  if(busy?.type===type)return;while(busy)await busy.done;if(!state)return;let release;const mine=busy={type,done:new Promise(r=>release=r)};const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},context=retryContext(type);
+  // A repeat of the in-flight command on an unchanged screen (a double click) is dropped. Anything else waits its turn so the click is not
+  // lost: a different command, such as a pick the live stream revealed before the response arrived, or the same one once the stream
+  // has shown its result (adding a second bot).
+  if(busy?.type===type&&busy.revision===state.revision)return;while(busy)await busy.done;if(!state)return;let release;const mine=busy={type,revision:state.revision,done:new Promise(r=>release=r)};const id=commandId(),payload={id,revision:state.revision,command:{type,...extra}},context=retryContext(type);
   try{let next;try{next=await request(`/api/rooms/${session.room}/commands`,payload);}catch(e){if(e instanceof TypeError)next=await request(`/api/rooms/${session.room}/commands`,payload);else throw e;}
     // The live stream often delivers this revision first; a second draw would only redo the work.
     const closing=mode!=='';mode='';if(next.revision>state.revision){state=named(next);render();}else if(closing)render();}
