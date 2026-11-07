@@ -14,6 +14,7 @@ Every piece of feedback or planned work is a work item: one file `NNN-slug.md` h
 
 | # | Item | Finished |
 |---|---|---|
+| 018 | [The "Accepted" tag looks unlike the buttons beside it](018-accepted-tag.md) | 2026-11-07 |
 | 017 | [A live update swallows a click in progress](017-press-during-update.md) | 2026-11-07 |
 | 015 | [Declined offers leave the table, bots hear everyone out](015-trade-answers.md) | 2026-11-06 |
 | 013 | [Two item-010 browser tests are flaky](013-layout-test-flakes.md) | 2026-11-04 |

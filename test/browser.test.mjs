@@ -501,6 +501,9 @@ test('browser: discards, player and bank trades, and every development card',{sk
     await Promise.all([B.click('.offer [data-accept]'),C.eval(`document.getElementById('trade').requestSubmit()`)]);
     for(const page of [B,C])assert.doesNotMatch(await page.text('#toast'),/try again/);
     await A.waitFor(`document.querySelector('.offer [data-confirm]')&&document.querySelectorAll('.offer').length===2`,{message:'The accept and the counteroffer did not both reach the active player'});
+    // Your own "Accepted" sits in the row like the buttons beside it: same height, font and vertical centre (layout offsets, since the card is slightly tilted).
+    await B.waitFor(`document.querySelector('.offer [data-ui="accepted"]')`,{message:'B did not see its own accept'});const tag=await B.eval(`(()=>{const t=document.querySelector('.offer [data-ui="accepted"]'),w=t.parentElement.querySelector('[data-decline]'),f=e=>getComputedStyle(e).fontSize,mid=e=>e.offsetTop+e.offsetHeight/2;return [t.offsetHeight,f(t),mid(t),w.offsetHeight,f(w),mid(w)];})()`);
+    assert.deepEqual(tag.slice(0,3),tag.slice(3),'the Accepted tag matches the Withdraw button next to it');
     // Answers redraw the panel live; it must not replay its entrance each time (it used to blink).
     await pause(300);assert.equal(await A.eval(`document.querySelector('[data-ui="trade-panel"]').getAnimations().length`),0,'the open trade panel does not animate again on a live update');
     assert.equal((await hand(B)).brick,2,'accepting alone moves no cards');

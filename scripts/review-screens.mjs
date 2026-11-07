@@ -72,6 +72,7 @@ try{
   await accepter.waitFor(`document.querySelector('.offer [data-accept]')`);await accepter.click('.offer [data-accept]');await me.waitFor(`document.querySelector('.offer [data-confirm]')`);
   await counterer.waitFor(`document.querySelector('.offer [data-counter]')`);await post(counterer,{'give-brick':1,'want-wool':2},true);
   await me.waitFor(`document.querySelectorAll('.offer').length===2`);await shot(me,'05-trade-offer');
+  await accepter.waitFor(`document.querySelector('.offer [data-ui="accepted"]')`);await shot(accepter,'05b-trade-accepted');
   await me.click('[data-mode="trade"]');await me.waitFor(`document.getElementById('trade')`);for(const k of ['give-wool','give-wool','want-brick'])await me.click(`[data-pick="${k}"][data-step="1"]`);await shot(me,'06-trade-panel');
   await me.click('[data-mode="trade"]');await pause(300);
   await me.click('[data-mode="bank"]').catch(()=>{});await me.waitFor(`document.getElementById('bank')`);await me.eval(`(()=>{const b=document.querySelector('#bank [data-choice="give"] [data-choose]:not(:disabled)');b?.click();document.querySelector('#bank [data-choice="want"] [data-choose="brick"]').click();return true;})()`);await shot(me,'07-bank-panel');

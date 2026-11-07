@@ -188,6 +188,7 @@
 .mini-card .ico{margin:0 3px 0 1px}
 .offer-actions{margin-top:8px;display:flex;gap:6px}
 .offer-actions button{margin:0}
+.accepted-tag{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #a9cf98;border-radius:8px;background:#cfe6c4;color:#24502b;font-size:12px;font-weight:650}.accepted-tag .ui-ico{margin:0}
 /* The turn card carries a wax seal in the active player's colour. */
 .turn-card{position:relative}
 .seal{position:absolute;top:-10px;right:14px;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff55,#0000 45%),var(--player);border:2px solid #0000003a;box-shadow:0 3px 6px #2a1c1055,inset 0 0 0 4px #00000018;display:grid;place-items:center;font:700 15px Georgia,serif;color:#2a2119}

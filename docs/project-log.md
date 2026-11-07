@@ -427,3 +427,7 @@ Plan: [`work/017-press-during-update.md`](work/017-press-during-update.md), revi
 - **A second lost click:** clicking the same kind of button again while the first was still on its way, say adding a second bot, was taken for a double click and dropped, even when the screen had already shown the first result. Only a true double click is dropped now.
 - Two tests had quietly worked around both problems. The workarounds are gone, and the new tests fail without the fixes.
 
+
+## The "Accepted" tag (item 018)
+
+Accepting an offer showed a tiny sidebar-style badge next to full-size buttons. It now has the buttons' size and font, and a browser test checks that it lines up with Withdraw.
