@@ -431,3 +431,8 @@ Plan: [`work/017-press-during-update.md`](work/017-press-during-update.md), revi
 ## The "Accepted" tag (item 018)
 
 Accepting an offer showed a tiny sidebar-style badge next to full-size buttons. It now has the buttons' size and font, and a browser test checks that it lines up with Withdraw.
+
+
+## Asking for cards nobody has (item 019)
+
+You could post a trade request for a resource that was entirely in the supply, and nobody could ever accept it. The "I want" side now greys out anything no other player can hold, says why on hover, and stops at the number the others hold between them. The server refuses the rest and bots follow the same rule. The limit is a table-wide total on purpose: anything finer would give away individual hands.

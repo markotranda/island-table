@@ -1,6 +1,6 @@
 # 019: No trade requests for resources no opponent can hold
 
-**Status:** in review · **Commits:** …
+**Status:** done · **Commits:** 061dcc1, edeb89c, docs commit
 
 ## Feedback
 2026-11-09, owner: "Can't send trade requests for resources that are all in supply." Clarified: this is a wish, not a bug. Such a request should not be possible.
@@ -41,12 +41,23 @@
 **Verification.** New tests fail without the change; `npm test`; `THROTTLE=6 npm test` before the last commit; a screenshot of the panel with a greyed resource.
 
 ## Review
+Round 1 (read the code, no blocking findings): APPROVE.
+- Wrapper tip needs `pointer-events:none` on the disabled button, scoped so give and invention tips stay: accepted (`.hold-tip`).
+- `picker()` needs a way to supply tip text: accepted (fourth argument).
+- A counter being composed can sit above a limit that dropped meanwhile (`render(true)` restores values unclamped): accepted as is. The engine refuses it with a clear message, and the give picker already behaves this way.
+- Browser test must click to prove the cap, and clear ore from every seat: accepted.
+- `RULES.md` should state the limits of a table-wide check: accepted, with a comment at the engine check.
+- Bot seeded results may shift; exercise both branches of the `find`: accepted. `bot-stats` still shows bots winning 24 of 30 against scripted players.
 
 ## Progress
 | Step | State | Commit | Notes |
 |---|---|---|---|
+| 1 Engine, view, bot | done | 061dcc1 | New tests fail without the `lib` change |
+| 2 Picker and tips | done | edeb89c | Screenshot checked: greyed cards, tip on hover |
+| 3 Docs | done | docs commit | `THROTTLE=6 npm test` run first |
 
 ## Not verified
+Phone layout of the greyed cards was not looked at; it uses the existing `.pick.none` look. On touch, the wrapper's tip relies on the existing long press and was not tried on a real phone.
 
 ## Next step / Handoff prompt
-Read `CLAUDE.md`, then this file; the review comes next, then step 1.
+Finished; nothing further.
