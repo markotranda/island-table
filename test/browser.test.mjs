@@ -761,3 +761,21 @@ test('browser: a live update between press and release does not swallow the clic
     assert.deepEqual(pages.flatMap(p=>p.errors),[]);
   }finally{for(const p of pages)await p.close().catch(()=>{});await browser?.close();await server.stop();}
 });
+
+test('browser: "I want" stops at what the other players hold, and says why',{skip,timeout:120000},async()=>{
+  const server=await startServer(),browser=await launch();let pages=[];
+  try{
+    pages=await seatTable(browser,server,3,'fixed');
+    const [a,b]=await stage(server,pages,(g,{setHand})=>{g.phase='action';g.role=1;g.offers=[];const a=g.active,b=(a+1)%3,c=(a+2)%3;setHand(a,{wood:2});setHand(b,{brick:2});setHand(c,{brick:1});return [a,b];});
+    const A=pages[a],B=pages[b];
+    await openPanel(A,'trade','trade');
+    await A.waitFor(`document.querySelector('[data-pick="want-ore"][data-step="1"]').disabled&&document.querySelector('[data-pick="want-ore"][data-step="1"]').closest('.pick').classList.contains('none')`,{message:'a resource all in the supply is not greyed out'});
+    assert.ok(await A.eval(`document.querySelector('[data-pick="want-wood"][data-step="1"]').disabled`),'nobody else can hold what is left outside the supply when it is all yours');
+    await A.hover(`.pick.none:has([data-pick="want-ore"])`);await A.waitFor(`document.querySelector('#tip.visible')?.textContent==='No other player holds any ore'`,{message:'the greyed card does not say why'});
+    for(let n=0;n<4;n++)await A.click('[data-pick="want-brick"][data-step="1"]');
+    assert.equal(await A.eval(`document.querySelector('[name="want-brick"]').value`),'3','stops at the sum of the other hands');
+    await A.click('.pick-less[data-pick="want-brick"]');await A.click('.pick-less[data-pick="want-brick"]');
+    await fill(A,'trade',{'give-wood':1});await submit(A,'trade');await B.waitFor(`document.querySelector('.offer [data-counter]')`,{message:'the offer did not arrive'});
+    await B.click('.offer [data-counter]');await B.waitFor(`document.querySelector('#trade [name="want-wood"]')?.value==='1'`,{message:'the counter lost its prefilled request'});
+  }finally{await Promise.all(pages.map(p=>p.close().catch(()=>{})));await browser.close();await server.stop();}
+});

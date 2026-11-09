@@ -109,6 +109,7 @@
 .pick-less{position:absolute;top:-7px;right:-6px;width:20px;height:20px;padding:0;border-radius:50%;background:#203a3f;color:#fff;font-size:13px;line-height:20px}
 .pick-less:disabled{display:none}
 .pick.none .pick-card{opacity:.4}
+.pick.hold-tip .pick-card{pointer-events:none}
 .choice-card{padding:4px 2px 5px;border-radius:7px;background:linear-gradient(var(--terrain) 0 58%,#fffaf0 58%);border:1px solid #cbbf9f;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px}
 .choice-card.chosen{box-shadow:0 0 0 2.5px #f2c94c;border-color:#c9a24f}
 .ratio{font-weight:700}
