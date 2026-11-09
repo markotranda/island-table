@@ -245,3 +245,13 @@ test('a fixed five-player game keeps chosen colours while spots are still drawn,
   const spots=seed=>{let g=newGame('t','extended','fixed');for(let i=0;i<5;i++){addPlayer(g,'id'+i,'P'+i);g.players[i].ready=true;}g=order(apply(g,0,{type:'start'},rng(seed)),rng(seed));return g.board.vertices.filter(v=>v.building?.owner===0).map(v=>v.id).join();};
   assert.ok(new Set([1,2,3,4,5,6,7,8].map(spots)).size>1,'starting spots are still shuffled');
 });
+test('a request is limited to what the other players hold between them, counters included',()=>{
+  const post=(g,p,want,extra={})=>action(g,p,{type:'offer',offerId:'n'+p,give:{wood:1},want,...extra});
+  let g=clear(fixture());give(g,0,'wood',2);assert.throws(()=>post(g,0,{ore:1}),/No other player/,'all in the supply');
+  give(g,0,'ore',3);assert.throws(()=>action(g,0,{type:'offer',offerId:'n',give:{wood:1},want:{ore:1}}),/No other player/,'the rest in your own hand');
+  give(g,1,'ore',2);give(g,2,'ore',1);assert.throws(()=>post(g,0,{ore:4}),/No other player/,'more than are out');assert.equal(post(g,0,{ore:3}).offers.length,1,'the sum of several hands');
+  assert.deepEqual([0,1,3].map(p=>view(g,p).others.ore),[3,4,6],'counted for each seat without its own hand');
+  g=clear(fixture());give(g,0,'wheat',1);give(g,1,'ore',1);give(g,1,'wood',1);g=action(g,0,{type:'offer',offerId:'b',give:{wheat:1},want:{ore:1}});
+  assert.throws(()=>action(g,1,{type:'offer',offerId:'c',counterTo:'b',give:{wood:1},want:{brick:1}}),/No other player/,'a counter too');assert.equal(action(g,1,{type:'offer',offerId:'c',counterTo:'b',give:{wood:1},want:{wheat:1}}).offers.length,2);
+  conserved(g);
+});

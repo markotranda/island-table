@@ -55,3 +55,10 @@ test('a bot confirms with whoever accepted its offer once everyone answered, and
 test('the fallback move is legal in every phase a game passes through',()=>{
   play({count:4,seed:21,players:Array(4).fill((g,p,random,ctx)=>{const c=fallback(view(g,p));if(c?.type==='end'&&g.phase==='action'&&random(3))return bot(g,p,random,ctx);return c;}),limit:600,check:conserved});
 });
+test('a bot only asks for cards another player can have, moving on to its next need',()=>{
+  const {g}=play({count:3,seed:7,players:Array(3).fill(bot),until:g=>g.phase==='action'&&g.role===1});const a=g.active,[b,c]=[(a+1)%3,(a+2)%3],zero=()=>0,asked=o=>R.find(r=>o.want[r]);
+  setHand(g,a,{wool:3});for(const p of [b,c])setHand(g,p,Object.fromEntries(R.map(r=>[r,1])));
+  const first=decide(view(g,a),zero);assert.equal(first.type,'offer');const r=asked(first);for(const p of [b,c])setHand(g,p,{...g.players[p].hand,[r]:0});
+  const next=decide(view(g,a),zero);assert.equal(next.type,'offer');assert.notEqual(asked(next),r);apply(g,a,{...next,offerId:'n'},zero);
+  for(const p of [b,c])setHand(g,p,{});assert.notEqual(decide(view(g,a),zero).type,'offer','nothing to ask for when nobody holds anything');
+});
