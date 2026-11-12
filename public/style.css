@@ -459,3 +459,12 @@
 @keyframes end-nudge{0%,100%{box-shadow:0 0 0 0 #f2c94c00}50%{box-shadow:0 0 0 4px #f2c94c55,0 0 14px 2px #f2c94c66}}
 @keyframes end-nudge-strong{0%,100%{box-shadow:0 0 0 0 #f2c94c00;transform:none}50%{box-shadow:0 0 0 6px #f2c94c88,0 0 22px 6px #f2c94c99;transform:scale(1.025)}}
 @media(prefers-reduced-motion:reduce){.end-turn[data-nudge]{animation:none;box-shadow:0 0 0 3px #f2c94c}}
+/* Home and lobby fit one screen on desktop, like the game: the page is a column of top bar, table and (home) footer; long lists scroll inside their card. Phones and short windows keep scrolling. */
+@media(min-width:851px) and (min-height:575px){#app:has(>.landing),#app:has(>.lobby){height:100dvh;min-height:0;display:flex;flex-direction:column}#app:has(>.landing)>.topbar,#app:has(>.lobby)>.topbar{flex:none}
+.landing{flex:1;min-height:0;width:100%;grid-template-rows:minmax(0,1fr);padding-top:clamp(16px,5vh,75px);padding-bottom:clamp(14px,3vh,40px)}.intro{min-height:0;height:100%;display:flex;flex-direction:column;justify-content:center}.intro>*{flex:none}.intro>.eyebrow{margin-bottom:clamp(10px,2.5vh,24px)}.intro h1{font-size:clamp(44px,8.5vh,76px);margin-bottom:clamp(10px,2.5vh,24px)}.intro p{margin-bottom:clamp(6px,2vh,16px)}.intro .illustration{flex:1 1 0;min-height:0;height:auto;max-height:300px}
+.landing .form-card{min-height:0;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;padding:clamp(18px,3.5vh,30px)}.landing .form-card>*{flex:none}.landing .tabs{margin-bottom:clamp(12px,2.5vh,24px)}.landing .form-card label{margin-top:clamp(8px,1.6vh,15px)}.landing .form-card .wide{margin-top:clamp(12px,2vh,20px)}.entry-lists{flex:1 1 auto!important;min-height:96px;overflow-y:auto;margin:0 -6px;padding:0 6px}.entry-lists:empty{display:none}
+.landing-footer{flex:none;margin:0 auto;width:100%;padding-top:clamp(10px,2.4vh,24px);padding-bottom:clamp(10px,2.4vh,24px)}}
+@media(min-width:851px) and (min-height:575px) and (max-height:760px){.landing .form-card>p.muted{display:none}.landing .form-card h2{font-size:22px;margin-bottom:4px}.landing .form-card>.fine{margin-top:10px!important}}
+@media(min-width:851px) and (min-height:575px) and (max-height:680px){.landing .form-card>h2,.landing .form-card>.fine{display:none}}
+@media(min-width:851px) and (min-height:575px) and (max-height:640px){.landing-footer{display:none}}
+@media(min-width:851px) and (min-height:575px){.landing .tabs button{white-space:nowrap;padding-inline:8px}}

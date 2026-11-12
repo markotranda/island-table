@@ -396,6 +396,33 @@ test('browser: the tab title says when the game waits on you, and turn alerts re
   }finally{await plain?.close().catch(()=>{});for(const page of pages)await page.close().catch(()=>{});await browser.close();await server.stop();}
 });
 
+// Home and lobby fit one desktop screen like the game (wider than 850px, at least 575px tall); long lists scroll inside their card.
+const pageFits=page=>page.eval('document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth');
+const FIT_SIZES=[[1280,720],[1000,600],[851,575],[1920,1080]];
+test('browser: home fits one desktop screen, its lists scroll inside the card',{skip,timeout:90000},async()=>{
+  const server=await startServer(),browser=await launch(),streams=[];let page;
+  try{
+    const room=async name=>(await fetch(`${server.host}/api/rooms`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name})})).json();
+    // Five open tables: lobbies whose host has a live stream open. Three more rooms become this browser's saved seats.
+    for(const name of ['Ana','Bo','Cyd','Dee','Eli']){const r=await room(name),c=new AbortController();streams.push(c);const res=await fetch(`${server.host}/api/rooms/${r.room}/events`,{headers:{authorization:`Bearer ${r.token}`},signal:c.signal});assert.equal(res.status,200);}
+    const seats={};for(const name of ['Fay','Gus','Hal']){const r=await room(name);seats[r.room]={room:r.room,token:r.token,at:Date.now()};}
+    page=await browser.newPage({width:1280,height:720});await page.init(`try{const s=JSON.parse(localStorage.getItem('island-seats')||'{}');localStorage.setItem('island-seats',JSON.stringify({...${JSON.stringify(seats)},...s}));}catch{}`);
+    await page.goto(server.host);
+    for(const [w,h] of FIT_SIZES){await page.resize(w,h);await pause(150);assert.ok(await pageFits(page),`home (create) scrolls at ${w}x${h}`);}
+    await page.click('[data-ui="tab-join"]');await page.waitFor(`document.querySelectorAll('[data-open]').length===5&&document.querySelectorAll('[data-resume]').length===3`,{message:'open tables and saved seats did not show'});
+    for(const [w,h] of FIT_SIZES){await page.resize(w,h);await pause(150);
+      assert.ok(await pageFits(page),`home (join) scrolls at ${w}x${h}`);
+      const m=await page.eval(`(()=>{const L=document.querySelector('.entry-lists'),l=L.getBoundingClientRect(),row=document.querySelector('.open-table').getBoundingClientRect(),f=document.querySelector('.landing-footer')?.getBoundingClientRect(),inside=(a,b)=>a.top>=b.top-1&&a.bottom<=b.bottom+1;
+        const reach=[...L.querySelectorAll('[data-join],[data-resume]')].every(b=>{b.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect();return inside(r,L.getBoundingClientRect())&&r.top>=0&&r.bottom<=innerHeight;});
+        return {tall:L.clientHeight>=row.height,scrolls:L.scrollHeight>L.clientHeight,reach,footer:!f||!f.height||f.bottom<=innerHeight+1};})()`);
+      assert.ok(m.tall,`the list is at least one row tall at ${w}x${h}`);assert.ok(m.reach,`every Join and Resume button can be scrolled to at ${w}x${h}`);assert.ok(m.footer,`the footer stays on screen at ${w}x${h}`);
+      if(h<=720)assert.ok(m.scrolls,`the list scrolls inside the card at ${w}x${h}`);}
+    // Below the fit the page scrolls instead, so nothing is cut off.
+    await page.resize(1000,500);await pause(150);assert.ok(!await pageFits(page),'the page scrolls when the window is too short');
+    assert.deepEqual(page.errors,[]);
+  }finally{streams.forEach(c=>c.abort());await page?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+
 test('browser: phone-width home and lobby fit without horizontal scrolling',{skip,timeout:60000},async()=>{
   const server=await startServer(),browser=await launch();let page;
   try{
