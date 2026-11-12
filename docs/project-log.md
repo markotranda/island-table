@@ -436,3 +436,8 @@ Accepting an offer showed a tiny sidebar-style badge next to full-size buttons. 
 ## Asking for cards nobody has (item 019)
 
 You could post a trade request for a resource that was entirely in the supply, and nobody could ever accept it. The "I want" side now greys out anything no other player can hold, says why on hover, and stops at the number the others hold between them. The server refuses the rest and bots follow the same rule. The limit is a table-wide total on purpose: anything finer would give away individual hands.
+
+
+## Home and lobby on one screen (item 020)
+
+The game screen already fit the window; the home page and the lobby still scrolled. Now they fit too on any computer screen, the same rule as the game. The lobby's heading takes one line, the island picture takes whatever height the seats leave, and the explanation of the table settings moved into a tooltip. The open tables and saved seats on the home page scroll inside their own card. Phones still scroll, which is simply more comfortable there.

@@ -1,6 +1,6 @@
 # 020: Home and lobby fit one screen
 
-**Status:** in review · **Commits:** see Progress
+**Status:** done · **Commits:** see Progress
 
 ## Feedback
 2026-11-12, owner: "We have made main game screen nice and one screen and non scrollable. But, main menu, lobby screen, that is still scrollable. Let's fix that."
@@ -53,4 +53,4 @@ Round 1 (REVISE): 1 grid rows need `minmax(0,1fr)` + `min-height:0` → accepted
 ## Not verified
 
 ## Next step / Handoff prompt
-Read CLAUDE.md, then this file. Review is next, then step 1.
+Nothing left. Leftover: item 021.
