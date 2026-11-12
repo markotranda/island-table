@@ -423,6 +423,29 @@ test('browser: home fits one desktop screen, its lists scroll inside the card',{
   }finally{streams.forEach(c=>c.abort());await page?.close().catch(()=>{});await browser?.close();await server.stop();}
 });
 
+test('browser: a full lobby fits one desktop screen for the host and a guest',{skip,timeout:90000},async()=>{
+  const server=await startServer(),browser=await launch();let host,guest;
+  try{
+    host=await browser.newPage({width:1280,height:720});guest=await browser.newPage({width:1280,height:720});
+    await createTable(host,server.host,'Host','extended','variable');
+    const link=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);
+    await joinByInvite(guest,`${server.invite}/?room=${link}`,'Guest');
+    for(let n=3;n<=5;n++){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('.lobby-seat[data-seat]').length===${n}`);}
+    // The tallest seat: the host's own, holding the swatches and a colour request from the guest.
+    const color=await host.eval(`document.querySelector('.lobby-seat.own').dataset.seatColor`);
+    await guest.waitFor(`document.querySelector('[data-ui="colors"] [data-color="${color}"]')?.dataset.state==='person'`);await guest.click(`[data-ui="colors"] [data-color="${color}"]`);
+    await host.waitFor(`document.querySelector('[data-ui="color-ask"]')`,{message:'the colour request did not reach the host'});
+    assert.match(await host.eval(`document.querySelector('[data-ui="rules-note"]').dataset.tip`),/paired-player turns/,'the rules description is the note’s tooltip');
+    for(const [w,h] of FIT_SIZES)for(const [who,page] of [['host',host],['guest',guest]]){await page.resize(w,h);await pause(150);
+      assert.ok(await pageFits(page),`the ${who}'s lobby scrolls at ${w}x${h}`);
+      const m=await page.eval(`(()=>{const s=q=>{const e=document.querySelector(q);return e.scrollHeight<=e.clientHeight+1;},r=document.querySelector('.place-code').getBoundingClientRect(),i=document.querySelector('.place-code');return {table:s('.lobby-table'),card:s('.place-card'),code:i.scrollWidth<=i.clientWidth+1};})()`);
+      assert.ok(m.code,`the whole invitation code shows at ${w}x${h}`);
+      if(w>=1280)assert.ok(m.table&&m.card,`nothing scrolls inside the ${who}'s lobby at ${w}x${h}: ${JSON.stringify(m)}`);}
+    await host.resize(1000,520);await pause(150);assert.ok(!await pageFits(host),'the lobby page scrolls when the window is too short');
+    assert.deepEqual([...host.errors,...guest.errors],[]);
+  }finally{await host?.close().catch(()=>{});await guest?.close().catch(()=>{});await browser?.close();await server.stop();}
+});
+
 test('browser: phone-width home and lobby fit without horizontal scrolling',{skip,timeout:60000},async()=>{
   const server=await startServer(),browser=await launch();let page;
   try{
