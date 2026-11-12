@@ -403,8 +403,8 @@ test('browser: home fits one desktop screen, its lists scroll inside the card',{
   const server=await startServer(),browser=await launch(),streams=[];let page;
   try{
     const room=async name=>(await fetch(`${server.host}/api/rooms`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name})})).json();
-    // Five open tables: lobbies whose host has a live stream open. Three more rooms become this browser's saved seats.
-    for(const name of ['Ana','Bo','Cyd','Dee','Eli']){const r=await room(name),c=new AbortController();streams.push(c);const res=await fetch(`${server.host}/api/rooms/${r.room}/events`,{headers:{authorization:`Bearer ${r.token}`},signal:c.signal});assert.equal(res.status,200);}
+    // Five open tables: lobbies whose host has a live stream open, read to the end so an unread, collected response can't close it. Three more rooms become this browser's saved seats.
+    for(const name of ['Ana','Bo','Cyd','Dee','Eli']){const r=await room(name),c=new AbortController();streams.push(c);const res=await fetch(`${server.host}/api/rooms/${r.room}/events`,{headers:{authorization:`Bearer ${r.token}`},signal:c.signal});assert.equal(res.status,200);(async()=>{try{for await(const _ of res.body);}catch{}})();}
     const seats={};for(const name of ['Fay','Gus','Hal']){const r=await room(name);seats[r.room]={room:r.room,token:r.token,at:Date.now()};}
     page=await browser.newPage({width:1280,height:720});await page.init(`try{const s=JSON.parse(localStorage.getItem('island-seats')||'{}');localStorage.setItem('island-seats',JSON.stringify({...${JSON.stringify(seats)},...s}));}catch{}`);
     await page.goto(server.host);
@@ -431,15 +431,15 @@ test('browser: a full lobby fits one desktop screen for the host and a guest',{s
     const link=await host.eval(`document.querySelector('input[aria-label="Invitation code"]').value`);
     await joinByInvite(guest,`${server.invite}/?room=${link}`,'Guest');
     for(let n=3;n<=5;n++){await host.click('[data-command="addBot"]');await host.waitFor(`document.querySelectorAll('.lobby-seat[data-seat]').length===${n}`);}
-    // The tallest seat: the host's own, holding the swatches and a colour request from the guest.
+    // The widest possible code (one hex digit twelve times) must fit, not just this room's random one. The tallest seat: the host's own, holding the swatches and a colour request from the guest.
     const color=await host.eval(`document.querySelector('.lobby-seat.own').dataset.seatColor`);
     await guest.waitFor(`document.querySelector('[data-ui="colors"] [data-color="${color}"]')?.dataset.state==='person'`);await guest.click(`[data-ui="colors"] [data-color="${color}"]`);
     await host.waitFor(`document.querySelector('[data-ui="color-ask"]')`,{message:'the colour request did not reach the host'});
     assert.match(await host.eval(`document.querySelector('[data-ui="rules-note"]').dataset.tip`),/paired-player turns/,'the rules description is the note’s tooltip');
     for(const [w,h] of FIT_SIZES)for(const [who,page] of [['host',host],['guest',guest]]){await page.resize(w,h);await pause(150);
       assert.ok(await pageFits(page),`the ${who}'s lobby scrolls at ${w}x${h}`);
-      const m=await page.eval(`(()=>{const s=q=>{const e=document.querySelector(q);return e.scrollHeight<=e.clientHeight+1;},r=document.querySelector('.place-code').getBoundingClientRect(),i=document.querySelector('.place-code');return {table:s('.lobby-table'),card:s('.place-card'),code:i.scrollWidth<=i.clientWidth+1};})()`);
-      assert.ok(m.code,`the whole invitation code shows at ${w}x${h}`);
+      const m=await page.eval(`(()=>{const s=q=>{const e=document.querySelector(q);return e.scrollHeight<=e.clientHeight+1;},i=document.querySelector('.place-code'),v=i.value,wide=[...'0123456789abcdef'].map(c=>{i.value=c.repeat(12);return [c,i.scrollWidth];}).filter(([,w])=>w>i.clientWidth+1);i.value=v;return {table:s('.lobby-table'),card:s('.place-card'),code:!wide.length,wide,cw:i.clientWidth};})()`);
+      assert.ok(m.code,`the whole invitation code shows at ${w}x${h} for ${who}: ${JSON.stringify(m)}`);
       if(w>=1280)assert.ok(m.table&&m.card,`nothing scrolls inside the ${who}'s lobby at ${w}x${h}: ${JSON.stringify(m)}`);}
     await host.resize(1000,520);await pause(150);assert.ok(!await pageFits(host),'the lobby page scrolls when the window is too short');
     assert.deepEqual([...host.errors,...guest.errors],[]);
